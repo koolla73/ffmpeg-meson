@@ -1,5 +1,6 @@
 libavcodec_bsf_optional_sources = {
   'aac_adtstoasc_bsf' : files('aac_adtstoasc.c'),
+  'apv_metadata_bsf' : files('apv_metadata.c'),
   'av1_frame_merge_bsf' : files('av1_frame_merge.c'),
   'av1_frame_split_bsf' : files('av1_frame_split.c'),
   'av1_metadata_bsf' : files('av1_metadata.c'),
@@ -10,6 +11,7 @@ libavcodec_bsf_optional_sources = {
   'dump_extradata_bsf' : files('dump_extradata.c'),
   'dv_error_marker_bsf' : files('dv_error_marker.c'),
   'eac3_core_bsf' : files('eac3_core.c'),
+  'eia608_to_smpte436m_bsf' : files('eia608_to_smpte436m.c'),
   'evc_frame_merge_bsf' : files('evc_frame_merge.c'),
   'extract_extradata_bsf' : files('extract_extradata.c'),
   'filter_units_bsf' : files('filter_units.c'),
@@ -35,6 +37,7 @@ libavcodec_bsf_optional_sources = {
   'remove_extradata_bsf' : files('remove_extradata.c'),
   'setts_bsf' : files('setts.c'),
   'showinfo_bsf' : files('showinfo.c'),
+  'smpte436m_to_eia608_bsf' : files('smpte436m_to_eia608.c'),
   'text2movsub_bsf' : files('movsub.c'),
   'trace_headers_bsf' : files('trace_headers.c'),
   'truehd_core_bsf' : files('truehd_core.c'),

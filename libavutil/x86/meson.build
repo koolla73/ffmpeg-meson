@@ -1,4 +1,5 @@
 libavutil_x86_sources = files(
+  'aes_init.c',
   'cpu.c',
   'fixed_dsp_init.c',
   'float_dsp_init.c',
@@ -12,6 +13,7 @@ libavutil_x86_optional_sources = {
 }
 
 libavutil_x86_x86asm_sources = files(
+  'aes.asm',
   'cpuid.asm',
   'fixed_dsp.asm',
   'float_dsp.asm',
@@ -24,4 +26,3 @@ libavutil_x86_x86asm_optional_sources = {
   'mmx_external' : files('emms.asm'), # MANUAL
   'pixelutils' : files('pixelutils.asm'),
 }
-

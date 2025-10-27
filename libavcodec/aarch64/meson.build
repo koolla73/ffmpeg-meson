@@ -2,6 +2,7 @@
 
 libavcodec_aarch64_optional_sources = {
   'aac_decoder' : files('aacpsdsp_init_aarch64.c','sbrdsp_init_aarch64.c'),
+  'aac_encoder' : files('aacencdsp_init.c'),
   'ac3dsp' : files('ac3dsp_init_aarch64.c'),
   'dca_decoder' : files('synth_filter_init.c'),
   'fdctdsp' : files('fdctdsp_init_aarch64.c'),
@@ -14,7 +15,7 @@ libavcodec_aarch64_optional_sources = {
   'idctdsp' : files('idctdsp_init_aarch64.c'),
   'me_cmp' : files('me_cmp_init_aarch64.c'),
   'mpegaudiodsp' : files('mpegaudiodsp_init.c'),
-  'mpegvideoenc' : files('mpegvideoencdsp_init.c'),
+  'mpegvideoencdsp' : files('mpegvideoencdsp_init.c'),
   'neon_clobber_test' : files('neontest.c'),
   'opus_decoder' : files('opusdsp_init.c'),
   'pixblockdsp' : files('pixblockdsp_init_aarch64.c'),
@@ -32,6 +33,7 @@ libavcodec_aarch64_armv8_optional_sources = {
 
 libavcodec_aarch64_neon_optional_sources = {
   'aac_decoder' : files('sbrdsp_neon.S','aacpsdsp_neon.S'),
+  'aac_encoder' : files('aacencdsp_neon.S'),
   'ac3dsp' : files('ac3dsp_neon.S'),
   'dca_decoder' : files('synth_filter_neon.S'),
   'fdctdsp' : files('fdctdsp_neon.S'),
@@ -45,7 +47,7 @@ libavcodec_aarch64_neon_optional_sources = {
   'idctdsp' : files('idctdsp_neon.S','simple_idct_neon.S'),
   'me_cmp' : files('me_cmp_neon.S'),
   'mpegaudiodsp' : files('mpegaudiodsp_neon.S'),
-  'mpegvideoenc' : files('mpegvideoencdsp_neon.S'),
+  'mpegvideoencdsp' : files('mpegvideoencdsp_neon.S'),
   'opus_decoder' : files('opusdsp_neon.S'),
   'pixblockdsp' : files('pixblockdsp_neon.S'),
   'vc1dsp' : files('vc1dsp_neon.S'),

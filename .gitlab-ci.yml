@@ -88,21 +88,11 @@ debian-container-build@x86_64@full:
     - '.container.debian@common.full'
     - '.fdo.distribution-image@debian'
 
-.build withdepsnoyasm:
-  extends: '.build withdeps'
-  before_script:
-    - apt-get remove --yes nasm
-    - apt-get update
-    - apt-get install --yes yasm
-
 no external deps:
   extends: '.build nodeps'
 
 with deps:
   extends: '.build withdeps'
-
-with deps yasm:
-  extends: '.build withdepsnoyasm'
 
 .build@i386.common:
   image:

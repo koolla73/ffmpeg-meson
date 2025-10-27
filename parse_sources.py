@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (c) 2018 Mathieu Duponchelle <mathieu@centricular.com>
 #
 # This file is part of the FFmpeg Meson build
@@ -25,7 +27,8 @@ from collections import defaultdict
 ASM_EXTS = ['asm', 'S', 'c']
 
 SOURCE_TYPE_EXTS_MAP = {
-    'c': ['c', 'cpp', 'm', 'cl', 'S'],
+    # MANUAL: comp needs to go through source2c
+    'c': ['c', 'cpp', 'm', 'cl', 'S', 'comp'],
     'h': ['h'],
     'asm': ASM_EXTS,
     'armv5te': ASM_EXTS,
@@ -33,11 +36,13 @@ SOURCE_TYPE_EXTS_MAP = {
     'armv8': ASM_EXTS,
     'vfp': ASM_EXTS,
     'neon': ASM_EXTS,
+    'sve': ASM_EXTS,
     'test-prog': ['c'],
     'mmx': ['c'],
     'shlib': ['c'],
     'slib': ['c'],
     'cuda': ['cu'],
+    # 'vulkan': ['comp'],
 }
 SOURCE_TYPE_DOUBLE_EXTS_MAP = {
     'metallib.o': ['metal'],
@@ -68,6 +73,7 @@ def make_to_meson(path):
       'armv8': defaultdict(list),
       'vfp': defaultdict(list),
       'neon': defaultdict(list),
+      'sve': defaultdict(list),
       'test-prog': defaultdict(list),
       'mmx': defaultdict(list),
       'shlib': defaultdict(list),
@@ -79,7 +85,6 @@ def make_to_meson(path):
     with open(os.path.join(path, 'Makefile'), 'r') as f:
         accum = []
         accumulate = False
-        optional = False
         source_type = None
         languages_map = defaultdict(set)
 
@@ -215,6 +220,10 @@ def make_to_meson(path):
                 label = ''
                 ofiles = l.split('=')[1]
                 source_type = 'neon'
+            elif re.match('SVE-OBJS.*=.*', l):
+                label = ''
+                ofiles = l.split('=')[1]
+                source_type = 'sve'
             elif re.match(r'TESTPROGS-.*CONFIG.*\+\=.*', l):
                 label, ofiles = l.split('+=')
                 label = label.split('CONFIG_')[1].rstrip(' )')
@@ -252,10 +261,13 @@ def make_to_meson(path):
                         os.path.join(path, SOURCE_TYPE_DIRS.get(source_type, ''), tmpf),
                         os.path.join(path, SOURCE_TYPE_DIRS.get(source_type, ''), os.path.basename(tmpf)),
                         # x86/h26x
-                        os.path.join(root, SOURCE_TYPE_DIRS.get(source_type, ''), os.path.dirname(tmpf), os.path.basename(tmpf))
+                        os.path.join(root, SOURCE_TYPE_DIRS.get(source_type, ''), os.path.dirname(tmpf), os.path.basename(tmpf)),
+                        # fftools et al.
+                        os.path.join(SOURCE_TYPE_DIRS.get(source_type, ''), os.path.dirname(tmpf), os.path.basename(tmpf))
                     ]
-                    for i, p in enumerate(path_options):
-                        if os.path.exists(p):
+                    existing_paths = filter(lambda t: os.path.exists(t[1]), enumerate(path_options))
+                    if existing_paths:
+                        for i, p in existing_paths:
                             # What path needs to go into the Meson file?
                             src_path = Path(p)
                             meson_path = Path(path)
@@ -271,7 +283,8 @@ def make_to_meson(path):
                             ifiles.append(tmpf)
                             add_language(languages_map, ext, label)
                             break
-                    # print("WARNING: %s do not exist" % str(path_options))
+                    else:
+                        print("WARNING: %s do not exist" % str(path_options))
 
             if len([of for of in ofiles if not of.startswith("$")]) != len(ifiles):
                 print("WARNING: %s and %s size don't match, not building!" % ([of for of in ofiles if not of.startswith("$")], ifiles))
@@ -324,6 +337,7 @@ def make_to_meson(path):
         ('armv6_', source_maps['armv6']),
         ('armv8_', source_maps['armv8']),
         ('neon_', source_maps['neon']),
+        ('sve_', source_maps['sve']),
         ('vfp_', source_maps['vfp']),
         ('mmx_', source_maps['mmx']),
         ('shlib_', source_maps['shlib']),
@@ -366,9 +380,9 @@ def make_to_meson(path):
             if l == 0:
                 continue
             if label in skipped:
-                f.write("  # '%s' : files(" % label.lower())
+                f.write("  # '%s' : files(" % label.strip().lower())
             else:
-                f.write("  '%s' : files(" % label.lower())
+                f.write("  '%s' : files(" % label.strip().lower())
             for i, source in enumerate(map_[label]):
                 if '$' in source:
                     print ('Warning: skipping %s' % source)
@@ -435,42 +449,104 @@ def make_to_meson(path):
         meson_file.write(content)
 
 paths = [
+        # 'ffbuild',
         'fftools',
-        'libavdevice',
-        'libavformat',
-        'libavutil',
-        'libavutil/aarch64',
-        'libavutil/arm',
-        'libavutil/x86',
-        'libswscale',
-        'libswscale/aarch64',
-        'libswscale/arm',
-        'libswscale/x86',
+        # 'fftools/graph',
+        'fftools/resources',
+        # 'fftools/textformat',
         'libavcodec',
-        'libavcodec/bsf',
         'libavcodec/aac',
         'libavcodec/aarch64',
+        # 'libavcodec/aarch64/h26x',
         'libavcodec/aarch64/vvc',
         'libavcodec/arm',
         'libavcodec/bsf',
-        'libavcodec/hevc',
         # 'libavcodec/h26x',
+        'libavcodec/hevc',
+        # 'libavcodec/loongarch',
+        # 'libavcodec/mips',
         'libavcodec/neon',
         'libavcodec/opus',
-        'libavcodec/x86',
-        'libavcodec/x86/vvc',
+        # 'libavcodec/ppc',
+        # 'libavcodec/riscv',
+        # 'libavcodec/riscv/h26x',
+        # 'libavcodec/riscv/vvc',
+        # 'libavcodec/tests',
+        # 'libavcodec/tests/aarch64',
+        # 'libavcodec/tests/arm',
+        # 'libavcodec/tests/ppc',
+        # 'libavcodec/tests/x86',
+        'libavcodec/vulkan',
         'libavcodec/vvc',
+        # 'libavcodec/wasm',
+        # 'libavcodec/wasm/hevc',
+        'libavcodec/x86',
+        # 'libavcodec/x86/h26x',
+        'libavcodec/x86/hevc',
+        'libavcodec/x86/vvc',
+        'libavdevice',
+        # 'libavdevice/riscv',
+        # 'libavdevice/tests',
+        'libavfilter',
+        'libavfilter/aarch64',
+        # 'libavfilter/cuda',
+        'libavfilter/dnn',
+        # 'libavfilter/metal',
+        # 'libavfilter/opencl',
+        # 'libavfilter/riscv',
+        # 'libavfilter/tests',
+        'libavfilter/vulkan',
+        'libavfilter/x86',
+        'libavformat',
+        # 'libavformat/riscv',
+        # 'libavformat/tests',
+        'libavutil',
+        'libavutil/aarch64',
+        'libavutil/arm',
+        # 'libavutil/loongarch',
+        # 'libavutil/mips',
+        # 'libavutil/ppc',
+        # 'libavutil/riscv',
+        # 'libavutil/tests',
+        # 'libavutil/wasm',
+        'libavutil/x86',
         'libswresample',
         'libswresample/aarch64',
         'libswresample/arm',
+        # 'libswresample/tests',
         'libswresample/x86',
-        'libavfilter',
-        'libavfilter/aarch64',
-        'libavfilter/x86',
-        'libavfilter/dnn',
-        'libpostproc',
+        'libswscale',
+        'libswscale/aarch64',
+        'libswscale/arm',
+        # 'libswscale/loongarch',
+        # 'libswscale/ppc',
+        # 'libswscale/riscv',
+        # 'libswscale/tests',
+        'libswscale/x86',
+        # 'presets',
+        # 'tests',
+        # 'tests/api',
+        # 'tests/checkasm',
+        # 'tests/checkasm/aarch64',
+        # 'tests/checkasm/arm',
+        # 'tests/checkasm/riscv',
+        # 'tests/checkasm/x86',
+        # 'tests/fate',
+        # 'tests/filtergraphs',
+        # 'tests/maps',
+        # 'tests/ref',
+        # 'tests/ref/acodec',
+        # 'tests/ref/fate',
+        # 'tests/ref/lavf',
+        # 'tests/ref/lavf-fate',
+        # 'tests/ref/pixfmt',
+        # 'tests/ref/seek',
+        # 'tests/ref/vsynth',
+        # 'tests/streamgroups',
+        # 'tools',
+        # 'tools/python',
 ]
 
-if __name__=='__main__':
+if __name__ == '__main__':
     for path in paths:
         make_to_meson(path)

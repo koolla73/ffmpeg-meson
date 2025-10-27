@@ -12,6 +12,7 @@ libavcodec_x86_optional_sources = {
   'adpcm_g722_encoder' : files('g722dsp_init.c'),
   'alac_decoder' : files('alacdsp_init.c'),
   'apng_decoder' : files('pngdsp_init.c'),
+  'apv_decoder' : files('apv_dsp_init.c'),
   'audiodsp' : files('audiodsp_init.c'),
   'blockdsp' : files('blockdsp_init.c'),
   'bswapdsp' : files('bswapdsp_init.c'),
@@ -31,7 +32,6 @@ libavcodec_x86_optional_sources = {
   'h264dsp' : files('h264dsp_init.c'),
   'h264pred' : files('h264_intrapred_init.c'),
   'h264qpel' : files('h264_qpel.c'),
-  'hevc_decoder' : files('hevcdsp_init.c'), # MANUAL
   'hpeldsp' : files('hpeldsp_init.c'),
   'huffyuvdsp' : files('huffyuvdsp_init.c'),
   'huffyuvencdsp' : files('huffyuvencdsp_init.c'),
@@ -47,12 +47,14 @@ libavcodec_x86_optional_sources = {
   'mpeg4_decoder' : files('mpeg4videodsp.c','xvididct_init.c'),
   'mpegaudiodsp' : files('mpegaudiodsp.c'),
   'mpegvideo' : files('mpegvideo.c'),
-  'mpegvideoenc' : files('mpegvideoenc.c','mpegvideoencdsp_init.c'),
+  'mpegvideoenc' : files('mpegvideoenc.c'),
+  'mpegvideoencdsp' : files('mpegvideoencdsp_init.c'),
   'opus_decoder' : files('opusdsp_init.c'),
   'opus_encoder' : files('celt_pvq_init.c'),
   'pixblockdsp' : files('pixblockdsp_init.c'),
   'png_decoder' : files('pngdsp_init.c'),
   'prores_decoder' : files('proresdsp_init.c'),
+  'prores_raw_decoder' : files('proresdsp_init.c'),
   'qpeldsp' : files('qpeldsp_init.c'),
   'rv34dsp' : files('rv34dsp_init.c'),
   'rv40_decoder' : files('rv40dsp_init.c'),
@@ -84,6 +86,7 @@ libavcodec_x86_x86asm_optional_sources = {
   'adpcm_g722_encoder' : files('g722dsp.asm'),
   'alac_decoder' : files('alacdsp.asm'),
   'apng_decoder' : files('pngdsp.asm'),
+  'apv_decoder' : [], # MANUAL
   'audiodsp' : files('audiodsp.asm'),
   'blockdsp' : files('blockdsp.asm'),
   'bswapdsp' : files('bswapdsp.asm'),
@@ -102,7 +105,6 @@ libavcodec_x86_x86asm_optional_sources = {
   'h264dsp' : files('h264_deblock.asm','h264_deblock_10bit.asm','h264_idct.asm','h264_idct_10bit.asm','h264_weight.asm','h264_weight_10bit.asm'),
   'h264pred' : files('h264_intrapred.asm','h264_intrapred_10bit.asm'),
   'h264qpel' : files('h264_qpel_8bit.asm','h264_qpel_10bit.asm','fpel.asm','qpel.asm'),
-  'hevc_decoder' : files('hevc_add_res.asm','hevc_deblock.asm','hevc_idct.asm','hevc_mc.asm','hevc_sao.asm','hevc_sao_10bit.asm'), # MANUAL
   'hpeldsp' : files('fpel.asm','hpeldsp.asm'),
   'huffyuvdsp' : files('huffyuvdsp.asm'),
   'huffyuvencdsp' : files('huffyuvencdsp.asm'),
@@ -117,7 +119,7 @@ libavcodec_x86_x86asm_optional_sources = {
   'mlp_decoder' : files('mlpdsp.asm'),
   'mpeg4_decoder' : files('xvididct.asm'),
   'mpegaudiodsp' : files('dct32.asm','imdct36.asm'),
-  'mpegvideoenc' : files('mpegvideoencdsp.asm'),
+  'mpegvideoencdsp' : files('mpegvideoencdsp.asm'),
   'opus_decoder' : files('opusdsp.asm'),
   'opus_encoder' : files('celt_pvq_search.asm'),
   'pixblockdsp' : files('pixblockdsp.asm'),
@@ -141,7 +143,7 @@ libavcodec_x86_x86asm_optional_sources = {
   'vp3dsp' : files('vp3dsp.asm'),
   'vp6_decoder' : files('vp6dsp.asm'),
   'vp8dsp' : files('vp8dsp.asm','vp8dsp_loopfilter.asm'),
-  'vp9_decoder' : files('vp9intrapred.asm','vp9intrapred_16bpp.asm','vp9itxfm.asm','vp9itxfm_16bpp.asm','vp9lpf.asm','vp9lpf_16bpp.asm','vp9mc.asm','vp9mc_16bpp.asm'),
+  'vp9_decoder' : files('vp9intrapred.asm','vp9intrapred_16bpp.asm','vp9itxfm.asm','vp9itxfm_16bpp.asm','vp9lpf.asm','vp9lpf_16bpp.asm','vp9mc.asm','vp9mc_16bpp.asm'), # MANUAL
   'webp_decoder' : files('vp8dsp.asm'),
 }
 
@@ -154,9 +156,16 @@ libavcodec_x86_mmx_optional_sources = {
 
 #### --- END GENERATED --- ####
 
+subdir('hevc')
 subdir('vvc')
 
+libavcodec_x86_optional_sources += libavcodec_x86_hevc_optional_sources
+
 libavcodec_x86_optional_sources += libavcodec_x86_vvc_optional_sources
+
+libavcodec_x86_x86asm_optional_sources += libavcodec_x86_hevc_x86asm_optional_sources
+
+libavcodec_x86_x86asm_optional_sources += libavcodec_x86_vvc_x86asm_optional_sources
 
 # This file results in empty codegen and empty PDB generation otherwise.
 # https://bugzilla.nasm.us/show_bug.cgi?id=3392738
@@ -168,13 +177,14 @@ if conf.get('x86_32', 0) == 1
 elif conf.get('x86_64', 0) == 1
   # Alternatively,
   # panic: ../libavcodec/x86/simple_idct10.asm: assertion cv8_state.source_files != NULL failed at output/codeview.c:512
-  libavcodec_x86_x86asm_optional_sources += libavcodec_x86_vvc_x86asm_optional_sources
   libavcodec_x86_x86asm_optional_sources += {
+    'apv_decoder': libavcodec_x86_x86asm_optional_sources['apv_decoder'] + files('apv_dsp.asm'),
     'idctdsp': libavcodec_x86_x86asm_optional_sources ['idctdsp'] + files('simple_idct10.asm'),
     'mlp_decoder': libavcodec_x86_x86asm_optional_sources ['mlp_decoder'] + files('mlpdsp.asm'),
     'cfhd_encoder': libavcodec_x86_x86asm_optional_sources ['cfhd_encoder'] + files('cfhdencdsp.asm'),
     'prores_decoder': libavcodec_x86_x86asm_optional_sources ['prores_decoder'] + files('proresdsp.asm'),
     'truehd_decoder': libavcodec_x86_x86asm_optional_sources ['truehd_decoder'] + files('mlpdsp.asm'),
+    'vp9_decoder': libavcodec_x86_x86asm_optional_sources ['vp9_decoder'] + files('vp9itxfm_avx512.asm', 'vp9itxfm_16bpp_avx512.asm',),
   }
 
   if conf.get('hevc_decoder') == 1

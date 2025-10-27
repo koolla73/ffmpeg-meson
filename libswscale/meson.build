@@ -10,11 +10,15 @@ libswscale_version = f'@libswscale_majorver@.@minorver@.@microver@'
 
 libswscale_sources = files(
   'alphablend.c',
+  'cms.c',
+  'csputils.c',
   'hscale.c',
   'hscale_fast_bilinear.c',
+  'format.c',
   'gamma.c',
-  'half2float.c',
+  'graph.c',
   'input.c',
+  'lut3d.c',
   'options.c',
   'output.c',
   'rgb2rgb.c',
@@ -35,6 +39,7 @@ libswscale_headers = files(
 
 libswscale_shlib_sources = files(
   'log2_tab.c',
+  'half2float.c',
 )
 
 libswscale_tests = [

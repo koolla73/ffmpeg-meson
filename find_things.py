@@ -21,15 +21,16 @@
 import argparse
 import re
 
+
 def list_components(infile, full):
     things = []
 
     for line in infile:
         if not full:
             matches = re.match(
-                r'^extern\s+(?:const\s+)?AVFilter\s*ff_([^_]+)_(.*);', line.strip())
+                r'^extern\s+(?:const\s+)?FFFilter\s*ff_([^_]+)_(.*);', line.strip())
         else:
-            matches = re.match(r'extern\s+(?:const\s+)?AVFilter\s*ff_(.*_.*);', line.strip())
+            matches = re.match(r'extern\s+(?:const\s+)?FFFilter\s*ff_(.*_.*);', line.strip())
         if matches:
             if not full:
                 if re.match(r'[av](?:src|sink)', matches.group(1)) \
