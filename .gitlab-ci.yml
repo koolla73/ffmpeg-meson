@@ -150,6 +150,7 @@ with deps@i386:
     #   -Dbar=disabled
   before_script:
     - pip3 install -U meson
+    - choco install -y nasm
   script:
     # For some reason, options are separated by newline instead of space, so we
     # have to replace them first.
