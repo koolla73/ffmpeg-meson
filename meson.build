@@ -3533,6 +3533,26 @@ config_asm = configure_file(
   configuration: final_conf,
 )
 
+# Inject a platform load command for Nasm
+# (this isn't done upstream, but is needed to avoid warnings
+# at link time - or outright fails on Simulator)
+if host_system in ['darwin', 'ios'] and conf.get('x86asm', 0) == 1
+  if host_system == 'darwin'
+    nasm_platform = 'macos'
+    nasm_platform_min = '11,0'
+  else
+    nasm_platform = 'ios'
+    nasm_platform_min = '15,0'
+  endif
+  if nasm.version().version_compare('>= 3.00')
+    asm_args += [
+      '--pragma', 'macho build_version @0@,@1@'.format(
+        nasm_platform, nasm_platform_min
+      )
+    ]
+  endif
+endif
+
 config_components_h = configure_file(
   output: 'config_components.h',
   configuration: components_conf,
