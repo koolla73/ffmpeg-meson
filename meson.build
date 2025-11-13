@@ -130,6 +130,9 @@ project_c_args = [
   '-Wno-deprecated-declarations',
   '-Wno-unused-variable',
   '-Wno-maybe-uninitialized',
+  # GCC 14 breaks these: https://gcc.gnu.org/gcc-14/porting_to.html
+  # ./libavdevice/indev_list.c:2:5: error: initialization of ‘const AVInputFormat *’ from incompatible pointer type ‘const FFInputFormat *’ [-Wincompatible-pointer-types]
+  '-Wno-incompatible-pointer-types',
 
   # These flags end up used in feature detection,
   # do not enable them yet
