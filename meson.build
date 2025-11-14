@@ -2539,9 +2539,9 @@ endif
 
 # Manual check for vulkan_1_4
 if conf.get('vulkan') == 1
-  if cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined VK_VERSION_1_4', dependencies: extra_deps, name: 'Has Vulkan 1.4 define'))
+  if cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined VK_VERSION_1_4'), dependencies: extra_deps, name: 'Has Vulkan 1.4 define')
     conf.set10('vulkan_1_4', true)
-  elif cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)', dependencies: extra_deps, name: 'Supports Vulkan 1.4.317 or higher'))
+  elif cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)'), dependencies: extra_deps, name: 'Supports Vulkan 1.4.317 or higher')
     conf.set10('vulkan_1_4', true)
   else
     conf.set10('vulkan_1_4', false)
