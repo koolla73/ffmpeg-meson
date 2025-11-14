@@ -744,7 +744,7 @@ int main(void) {
 
 # Treat unrecognized flags as errors on MSVC
 if cc.compiles(cpp_cond.format('windows.h', '_MSC_FULL_VER >= 193030705'))
-  project_c_args += ['/options:strict']
+  project_c_args += cc.get_supported_arguments(['/options:strict'])
 endif
 
 libc_type = ''
