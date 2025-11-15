@@ -1033,6 +1033,29 @@ if get_option('libjxl').allowed() and get_option('libjxl_threads').allowed()
   ]
 endif
 
+if get_option('vaapi').allowed()
+  check_pkg_config += [
+    ['vaapi', ['va/va.h'], ['vaInitialize'], {'pkg': 'libva', 'version': '>= 0.35.0'}],
+  ]
+  if host_system == 'windows'
+    check_pkg_config += [
+      ['vaapi_win32', ['va/va_win32.h'], ['vaGetDisplayWin32'], {'pkg': 'libva-win32'}],
+    ]
+  else
+    check_pkg_config += [
+      ['vaapi_drm', ['va/va_drm.h'], ['vaGetDisplayDRM'], {'pkg': 'libva-drm'}],
+    ]
+  endif
+
+  if get_option('xlib_x11').allowed()
+    check_pkg_config += [
+      ['vaapi_x11', ['va/va_x11.h'], ['vaGetDisplay'], {'pkg': 'libva-x11'}],
+    ]
+  endif
+endif
+
+conf.set10('vaapi_1', cc.links(cpp_cond.format('va/va.h', 'VA_CHECK_VERSION(1, 0, 0)')))
+
 foreach check : check_pkg_config
   all_checks += [['pkg-config', check]]
 endforeach
@@ -1130,13 +1153,8 @@ check_components = [
   ['sndio', ['sndio.h'], ['sio_open'], ['sndio']],
   ['user32', ['windows.h', 'winuser.h'], ['GetShellWindow'], ['user32']],
   ['vfw32', ['windows.h', 'vfw.h'], ['capCreateCaptureWindow'], ['vfw3']],
-  ['vaapi', ['va/va.h'], ['vaInitialize'], ['va']],
 
   # Libraries with preconditions
-  ['vaapi_drm', ['va/va.h', 'va/va_drm.h'], ['vaGetDisplayDRM'], ['va', 'va-drm'],
-    {'preconditions': ['vaapi']}],
-  ['vaapi_x11', ['va/va.h', 'va/va_x11.h'], ['vaGetDisplay'], ['va', 'va-x11', 'X11'],
-    {'preconditions': ['vaapi', 'xlib_x11']}],
   ['vdpau_x11', ['vdpau/vdpau.h', 'vdpau/vdpau_x11.h'], ['vdp_device_create_x11'], ['vdpau', 'X11'],
     {'preconditions' : ['vdpau']}],
   ['libmfx', ['mfx/mfxvideo.h', 'mfx/mfxdefs.h'], ['MFXInit'], ['libmfx'],
@@ -1153,6 +1171,15 @@ check_components = [
   ['xlib_xext', ['X11/Xlib.h', 'X11/extensions/XShm.h'], ['XShmAttach'], ['Xext']],
   ['xlib_xv', ['X11/Xlib.h', 'X11/extensions/Xvlib.h'], ['XvGetPortAttribute'], ['Xv']],
 ]
+
+if get_option('vaapi').allowed()
+  check_structs += [
+    ['VADecPictureParameterBufferVP9', 'bit_depth', '#include <va/va.h>\n'],
+    ['VADecPictureParameterBufferAV1', 'bit_depth_idx', '#include <va/va.h>\n'],
+    ['VAProcPipelineCaps', 'rotation_flags', '#include <va/va.h>\n#include <va/va_vpp.h>\n'],
+    ['VAProcPipelineCaps', 'blend_flags', '#include <va/va.h>\n#include <va/va_vpp.h>\n'],
+  ]
+endif
 
 if get_option('avfoundation').allowed()
   conf.set10('coregraphics', false)
@@ -1290,17 +1317,6 @@ check_types = [
   ['DPI_AWARENESS_CONTEXT', ['windows.h'], {'c_args': ['-D_WIN32_WINNT=0x0A00']}],
   ['SecPkgContext_KeyingMaterialInfo', ['windows.h', 'security.h', 'schnlsp.h'], {'c_args': ['-DSECURITY_WIN32']}],
   ['DXVA2_ConfigPictureDecode', ['d3d9.h', 'dxva2api.h'], {'c_args': ['-D_WIN32_WINNT=0x0602']}],
-  ['VAPictureParameterBufferHEVC', ['va/va.h', 'va/va_dec_hevc.h']],
-  ['VAPictureParameterBufferVVC', ['va/va.h', 'va/va_dec_hevc.h']],
-  ['VAPictureParameterBufferVP8', ['va/va.h', 'va/va_dec_vp8.h']],
-  ['VAProcPipelineParameterBuffer', ['va/va.h', 'va/va_vpp.h']],
-  ['VAProcPipelineParameterBuffer', ['va/va.h', 'va/va_vpp.h']],
-  ['VAEncPictureParameterBufferH264', ['va/va.h', 'va/va_enc_h264.h']],
-  ['VAEncPictureParameterBufferHEVC', ['va/va.h', 'va/va_enc_hevc.h']],
-  ['VAEncPictureParameterBufferJPEG', ['va/va.h', 'va/va_enc_mpeg2.h']],
-  ['VAEncPictureParameterBufferMPEG2', ['va/va.h', 'va/va_enc_mpeg2.h']],
-  ['VAEncPictureParameterBufferVP8', ['va/va.h', 'va/va_enc_vp8.h']],
-  ['VAEncPictureParameterBufferVP9', ['va/va.h', 'va/va_enc_vp9.h']],
   ['VdpPictureInfoHEVC', ['vdpau/vdpau.h']],
   ['IBaseFilter', ['dshow.h']],
   ['clCreateImageFromFdINTEL_fn', ['CL/cl_intel.h'],
@@ -1324,6 +1340,21 @@ check_types = [
   ['VdpPictureInfoVP9', ['vdpau/vdpau.h']],
   ['VdpPictureInfoAV1', ['vdpau/vdpau.h']],
 ]
+
+if get_option('vaapi').allowed()
+  check_types += [
+    ['VAPictureParameterBufferHEVC', ['va/va.h', 'va/va_dec_hevc.h']],
+    ['VAPictureParameterBufferVVC', ['va/va.h', 'va/va_dec_vvc.h']],
+    ['VAProcFilterParameterBufferHDRToneMapping', ['va/va.h', 'va/va_vpp.h']],
+    ['VAEncPictureParameterBufferHEVC', ['va/va.h', 'va/va_enc_hevc.h']],
+    ['VAEncPictureParameterBufferHEVC', ['va/va.h', 'va/va_enc_hevc.h']],
+    ['VAEncPictureParameterBufferJPEG', ['va/va.h', 'va/va_enc_jpeg.h']],
+    ['VAEncPictureParameterBufferVP8', ['va/va.h', 'va/va_enc_vp8.h']],
+    ['VAEncPictureParameterBufferVP9', ['va/va.h', 'va/va_enc_vp9.h']],
+    ['VAEncPictureParameterBufferAV1', ['va/va.h', 'va/va_enc_av1.h']],
+  ]
+endif
+
 
 if get_option('videotoolbox').allowed()
   check_types += [
@@ -3396,7 +3427,11 @@ project_c_args += cc.get_supported_arguments(
 add_project_arguments(project_c_args, language: 'c')
 
 libavcodec_optional_deps = [iconv_extra_deps + android_extra_deps]
-libavutil_optional_deps = [vaapi_drm_extra_deps + vaapi_x11_extra_deps + vdpau_x11_extra_deps]
+libavutil_optional_deps = [
+  get_variable('vaapi_drm_extra_deps', [])
+  + get_variable('vaapi_x11_extra_deps', []) 
+  + get_variable('vdpau_x11_extra_deps', [])
+]
 libswresample_optional_deps = [libsoxr_extra_deps]
 
 common_deps += libm_extra_deps
