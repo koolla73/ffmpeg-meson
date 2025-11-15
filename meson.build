@@ -2802,6 +2802,10 @@ if conf.get('x86') == 1
     endif
   endif
 
+  # check whether EBP is available on x86
+  # As 'i' is stored on the stack, this program will crash
+  # if the base pointer is used to access it because the
+  # base pointer is cleared in the inline assembly code.
   ebp_available = false
   ebp_available_test = '''#include <signal.h>
     static void sighandler(int sig){
@@ -2824,10 +2828,11 @@ if conf.get('x86') == 1
     }
   '''
   if meson.is_cross_build()
-    ebp_available = cc.links(ebp_available_test, name: 'if_ebp_available_this_should_crash')
+    ebp_available = cc.links(ebp_available_test, name: 'ebp is safely available for use')
   else
-    ebp_result = cc.run(ebp_available_test, name: 'if_ebp_available_this_should_crash')
-    ebp_available = ebp_result.compiled() and ebp_result.returncode() != 0
+    ebp_result = cc.run(ebp_available_test, name: 'ebp is safely available for use')
+    # if returncode != 0, the signal handler was triggered
+    ebp_available = ebp_result.compiled() and ebp_result.returncode() == 0
   endif
 
   # FFmpeg upstream doesn't know that EBP is always unavailable
