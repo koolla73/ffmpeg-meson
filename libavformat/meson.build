@@ -653,7 +653,6 @@ libavformat_optional_sources = {
 libavformat_shlib_sources = files(
   'log2_tab.c',
   'to_upper4.c',
-  'bitstream.c',
 )
 
 libavformat_shlib_optional_sources = {

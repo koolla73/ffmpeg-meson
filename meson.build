@@ -21,7 +21,7 @@ project('FFmpeg', 'c', 'cpp',
   license: 'LGPL2.1+',
   # Static libraries by default following upstream
   default_options: [ 'buildtype=debugoptimized', 'c_std=c17', 'cpp_std=c++11', 'default_library=static'],
-  version: '8.0.0',
+  version: '8.0.1',
 )
 
 # HOWTO:
