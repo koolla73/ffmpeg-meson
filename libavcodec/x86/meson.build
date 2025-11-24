@@ -180,7 +180,6 @@ elif conf.get('x86_64', 0) == 1
   libavcodec_x86_x86asm_optional_sources += {
     'apv_decoder': libavcodec_x86_x86asm_optional_sources['apv_decoder'] + files('apv_dsp.asm'),
     'idctdsp': libavcodec_x86_x86asm_optional_sources ['idctdsp'] + files('simple_idct10.asm'),
-    'mlp_decoder': libavcodec_x86_x86asm_optional_sources ['mlp_decoder'] + files('mlpdsp.asm'),
     'cfhd_encoder': libavcodec_x86_x86asm_optional_sources ['cfhd_encoder'] + files('cfhdencdsp.asm'),
     'prores_decoder': libavcodec_x86_x86asm_optional_sources ['prores_decoder'] + files('proresdsp.asm'),
     'truehd_decoder': libavcodec_x86_x86asm_optional_sources ['truehd_decoder'] + files('mlpdsp.asm'),
