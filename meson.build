@@ -1057,7 +1057,6 @@ check_components = [
   ['clock_gettime', ['time.h'], ['clock_gettime'], ['rt']],
   ['cuda_sdk', ['cuda.h'], ['cuCtxCreate'], ['cuda']],
   ['frei0r', ['frei0r.h'], [], []],
-  ['iconv', ['iconv.h'], ['iconv'], ['iconv']],
   ['libgme', ['gme/gme.h'], ['gme_new_emu'], ['gme', 'stdc++']],
   ['gcrypt', ['gcrypt.h'], ['gcry_mpi_new'], ['gcrypt']],
   ['gmp', ['gmp.h'], ['mpz_export'], ['gmp']],
@@ -1194,7 +1193,6 @@ check_header_funcs = [
   ['posix_memalign', ['stdlib.h']],
   ['sem_timedwait', ['semaphore.h'], {'preconditions': ['pthreads'], 'extra_deps': ['thread_dep']}],
   ['prctl', ['sys/prctl.h']],
-  ['iconv', ['iconv.h']],
 ]
 
 foreach func : math_funcs
@@ -1229,6 +1227,16 @@ check_funcs = [
   ['gmtime_r'],
   ['localtime_r'],
 ]
+
+if get_option('iconv').allowed()
+  check_components += [
+    ['iconv', ['iconv.h'], ['iconv'], ['iconv']],
+  ]
+
+  check_header_funcs += [
+    ['iconv', ['iconv.h']],
+  ]
+endif
 
 if get_option('securetransport').allowed()
   conf.set10('securetransport', false)
@@ -3354,7 +3362,10 @@ endforeach
 
 add_project_arguments(project_c_args, language: 'c')
 
-libavcodec_optional_deps = [iconv_extra_deps + android_extra_deps]
+libavcodec_optional_deps = [
+  get_variable('iconv_extra_deps', [])
+  + android_extra_deps
+]
 libavutil_optional_deps = [vaapi_drm_extra_deps + vaapi_x11_extra_deps + vdpau_x11_extra_deps]
 libswresample_optional_deps = [libsoxr_extra_deps]
 
