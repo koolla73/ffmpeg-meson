@@ -343,8 +343,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     av_log(s->avctx, AV_LOG_DEBUG, "sof0: picture: %dx%d\n", width, height);
     if (av_image_check_size(width, height, 0, s->avctx) < 0)
         return AVERROR_INVALIDDATA;
-
-    // A valid frame requires at least 1 bit for DC + 1 bit for AC for each 8x8 block.
     if (s->buf_size && (width + 7) / 8 * ((height + 7) / 8) > s->buf_size * 4LL)
         return AVERROR_INVALIDDATA;
 
@@ -810,7 +808,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if (!s->hwaccel_picture_private)
             return AVERROR(ENOMEM);
 
-        ret = hwaccel->start_frame(s->avctx, s->raw_image_buffer,
+        ret = hwaccel->start_frame(s->avctx, NULL, s->raw_image_buffer,
                                    s->raw_image_buffer_size);
         if (ret < 0)
             return ret;
@@ -2126,7 +2124,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             av_log(s->avctx, AV_LOG_WARNING, "Invalid number of markers coded in APP2\n");
             goto out;
         } else if (s->iccnum != 0 && nummarkers != s->iccnum) {
-            av_log(s->avctx, AV_LOG_WARNING, "Mistmatch in coded number of ICC markers between markers\n");
+            av_log(s->avctx, AV_LOG_WARNING, "Mismatch in coded number of ICC markers between markers\n");
             goto out;
         } else if (seqno > nummarkers) {
             av_log(s->avctx, AV_LOG_WARNING, "Mismatching sequence number and coded number of ICC markers\n");
@@ -2510,7 +2508,11 @@ redo_for_pal8:
             break;
         case SOF3:
             avctx->profile     = AV_PROFILE_MJPEG_HUFFMAN_LOSSLESS;
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             s->lossless    = 1;
             s->ls          = 0;
             s->progressive = 0;
@@ -2519,7 +2521,11 @@ redo_for_pal8:
             break;
         case SOF48:
             avctx->profile     = AV_PROFILE_MJPEG_JPEG_LS;
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             s->lossless    = 1;
             s->ls          = 1;
             s->progressive = 0;
@@ -2563,6 +2569,8 @@ eoi_parser:
             }
             if ((ret = av_frame_ref(frame, s->picture_ptr)) < 0)
                 return ret;
+            if (s->lossless)
+                frame->flags |= AV_FRAME_FLAG_LOSSLESS;
             *got_frame = 1;
             s->got_picture = 0;
 
@@ -2867,15 +2875,15 @@ the_end:
             AVFrameSideData *sd = NULL;
 
             if (orientation >= 2 && orientation <= 8) {
-                ret = ff_frame_new_side_data(avctx, frame, AV_FRAME_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9, &sd);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Could not allocate frame side data\n");
-                    return ret;
-                }
-            }
+                int32_t *matrix;
 
-            if (sd) {
-                int32_t *matrix = (int32_t *)sd->data;
+                sd = av_frame_new_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9);
+                if (!sd) {
+                    av_log(avctx, AV_LOG_ERROR, "Could not allocate frame side data\n");
+                    return AVERROR(ENOMEM);
+                }
+
+                matrix = (int32_t *)sd->data;
 
                 switch (orientation) {
                 case 2:
@@ -2946,11 +2954,8 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_INFO, "Single field\n");
     }
 
-    if (s->picture) {
-        av_frame_free(&s->picture);
-        s->picture_ptr = NULL;
-    } else if (s->picture_ptr)
-        av_frame_unref(s->picture_ptr);
+    av_frame_free(&s->picture);
+    s->picture_ptr = NULL;
 
     av_frame_free(&s->smv_frame);
 

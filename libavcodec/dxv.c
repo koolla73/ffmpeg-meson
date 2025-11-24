@@ -1072,7 +1072,7 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
-static int dxv_init(AVCodecContext *avctx)
+static av_cold int dxv_init(AVCodecContext *avctx)
 {
     DXVContext *ctx = avctx->priv_data;
     int ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
@@ -1092,7 +1092,7 @@ static int dxv_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int dxv_close(AVCodecContext *avctx)
+static av_cold int dxv_close(AVCodecContext *avctx)
 {
     DXVContext *ctx = avctx->priv_data;
 

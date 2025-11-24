@@ -23,6 +23,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
+#include "libavutil/refstruct.h"
+
 #include "decode.h"
 #include "lcevcdec.h"
 
@@ -240,7 +242,7 @@ static void event_callback(LCEVC_DecoderHandle dec, LCEVC_Event event,
     }
 }
 
-static void lcevc_free(FFRefStructOpaque unused, void *obj)
+static void lcevc_free(AVRefStructOpaque unused, void *obj)
 {
     FFLCEVCContext *lcevc = obj;
     if (lcevc->initialized)
@@ -278,7 +280,7 @@ static int lcevc_init(FFLCEVCContext *lcevc, void *logctx)
 
 int ff_lcevc_process(void *logctx, AVFrame *frame)
 {
-    FrameDecodeData  *fdd = (FrameDecodeData*)frame->private_ref->data;
+    FrameDecodeData  *fdd = frame->private_ref;
     FFLCEVCFrame *frame_ctx = fdd->post_process_opaque;
     FFLCEVCContext *lcevc = frame_ctx->lcevc;
     int ret;
@@ -311,7 +313,7 @@ int ff_lcevc_alloc(FFLCEVCContext **plcevc)
 {
     FFLCEVCContext *lcevc = NULL;
 #if CONFIG_LIBLCEVC_DEC
-    lcevc = ff_refstruct_alloc_ext(sizeof(*lcevc), 0, NULL, lcevc_free);
+    lcevc = av_refstruct_alloc_ext(sizeof(*lcevc), 0, NULL, lcevc_free);
     if (!lcevc)
         return AVERROR(ENOMEM);
 #endif
@@ -322,7 +324,7 @@ int ff_lcevc_alloc(FFLCEVCContext **plcevc)
 void ff_lcevc_unref(void *opaque)
 {
     FFLCEVCFrame *lcevc = opaque;
-    ff_refstruct_unref(&lcevc->lcevc);
+    av_refstruct_unref(&lcevc->lcevc);
     av_frame_free(&lcevc->frame);
     av_free(opaque);
 }

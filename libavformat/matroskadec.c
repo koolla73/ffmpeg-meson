@@ -38,7 +38,6 @@
 #include "libavutil/base64.h"
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
-#include "libavutil/dict_internal.h"
 #include "libavutil/display.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/intfloat.h"
@@ -86,7 +85,7 @@
 #define LEVEL_ENDED                   3 /* return value of ebml_parse when the
                                          * syntax level used for parsing ended. */
 #define SKIP_THRESHOLD      1024 * 1024 /* In non-seekable mode, if more than SKIP_THRESHOLD
-                                         * of unkown, potentially damaged data is encountered,
+                                         * of unknown, potentially damaged data is encountered,
                                          * it is considered an error. */
 #define UNKNOWN_EQUIV         50 * 1024 /* An unknown element is considered equivalent
                                          * to this many bytes of unknown data for the
@@ -1419,7 +1418,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
         }
 
         if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
-            // Loosing sync will likely manifest itself as encountering unknown
+            // Losing sync will likely manifest itself as encountering unknown
             // elements which are not reliably distinguishable from elements
             // belonging to future extensions of the format.
             // We use a heuristic to detect such situations: If the current
@@ -1437,7 +1436,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
             // UNKNOWN_EQUIV of skipped bytes for the check.
             // The whole check is only done for non-seekable output, because
             // in this situation skipped data can't simply be rechecked later.
-            // This is especially important when using unkown length elements
+            // This is especially important when using unknown length elements
             // as the check for whether a child exceeds its containing master
             // element is not effective in this situation.
             if (update_pos) {
@@ -2137,7 +2136,7 @@ static int matroska_aac_sri(int samplerate)
 static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t date_utc)
 {
     /* Convert to seconds and adjust by number of seconds between 2001-01-01 and Epoch */
-    avpriv_dict_set_timestamp(metadata, "creation_time", date_utc / 1000 + 978307200000000LL);
+    ff_dict_set_timestamp(metadata, "creation_time", date_utc / 1000 + 978307200000000LL);
 }
 
 static int matroska_parse_flac(AVFormatContext *s,
@@ -3830,9 +3829,6 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
         text_len = len;
     }
 
-    if (text_len <= 0)
-        return AVERROR_INVALIDDATA;
-
     err = av_new_packet(pkt, text_len);
     if (err < 0) {
         return err;
@@ -3935,7 +3931,7 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
         provider_code = bytestream2_get_be16u(&bc);
 
         if (country_code != ITU_T_T35_COUNTRY_CODE_US ||
-            provider_code != ITU_T_T35_PROVIDER_CODE_SMTPE)
+            provider_code != ITU_T_T35_PROVIDER_CODE_SAMSUNG)
             break; // ignore
 
         provider_oriented_code = bytestream2_get_be16u(&bc);
