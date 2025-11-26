@@ -3818,6 +3818,7 @@ foreach built_lib : built_libs
       link_with: link_with,
       link_language: 'c',
       c_args: c_args,
+      objc_args: c_args,
       pic: conf.get('pic') == 1,
       implicit_include_directories : false,
       install: false,
@@ -3833,6 +3834,7 @@ foreach built_lib : built_libs
     link_with: link_with,
     link_language: 'c',
     c_args: c_args,
+    objc_args: c_args,
     nasm_args: asm_args + [
       '-I', meson.current_source_dir() / 'lib@0@'.format(built_lib[0]) / 'x86',
     ],
@@ -3865,6 +3867,7 @@ foreach built_lib : built_libs
     link_args: link_args,
     link_language: 'c',
     c_args: c_args,
+    objc_args: c_args,
     pic: conf.get('pic') == 1,
     vs_module_defs: vs_module_def,
     link_depends: link_deps,

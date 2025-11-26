@@ -620,7 +620,7 @@ libavfilter_optional_sources = {
   'xstack_vaapi_filter' : files('vf_stack_vaapi.c','framesync.c','vaapi_vpp.c'),
   'yadif_cuda_filter' : files('vf_yadif_cuda.c','yadif_common.c','cuda/load_helper.c'),
   'yadif_filter' : files('vf_yadif.c','yadif_common.c'),
-  'yadif_videotoolbox_filter' : files('vf_yadif_videotoolbox_workaround.m','metal/utils.m','yadif_common.c'), # MANUAL
+  'yadif_videotoolbox_filter' : files('vf_yadif_videotoolbox.m','metal/utils.m','yadif_common.c'), # MANUAL
   'yaepblur_filter' : files('vf_yaepblur.c'),
   'yuvtestsrc_filter' : files('vsrc_testsrc.c'),
   'zmq_filter' : files('f_zmq.c'),
