@@ -1,3 +1,5 @@
+#### --- GENERATED --- ####
+
 libavutil_x86_sources = files(
   'aes_init.c',
   'cpu.c',
@@ -13,7 +15,7 @@ libavutil_x86_optional_sources = {
 }
 
 libavutil_x86_x86asm_sources = files(
-  'aes.asm',
+  # 'aes.asm', # MANUAL
   'cpuid.asm',
   'fixed_dsp.asm',
   'float_dsp.asm',
@@ -26,3 +28,11 @@ libavutil_x86_x86asm_optional_sources = {
   'mmx_external' : files('emms.asm'), # MANUAL
   'pixelutils' : files('pixelutils.asm'),
 }
+
+#### --- END GENERATED --- ####
+
+if conf.get('aesni_external', 0) == 1
+  libavutil_x86_x86asm_sources += files(
+    'aes.asm',
+  )
+endif

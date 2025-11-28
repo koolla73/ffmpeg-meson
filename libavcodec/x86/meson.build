@@ -116,7 +116,7 @@ libavcodec_x86_x86asm_optional_sources = {
   'lpc' : files('lpc.asm'),
   'lscr_decoder' : files('pngdsp.asm'),
   'me_cmp' : files('me_cmp.asm'),
-  'mlp_decoder' : files('mlpdsp.asm'),
+  'mlp_decoder' : [], # MANUAL
   'mpeg4_decoder' : files('xvididct.asm'),
   'mpegaudiodsp' : files('dct32.asm','imdct36.asm'),
   'mpegvideoencdsp' : files('mpegvideoencdsp.asm'),
@@ -124,7 +124,7 @@ libavcodec_x86_x86asm_optional_sources = {
   'opus_encoder' : files('celt_pvq_search.asm'),
   'pixblockdsp' : files('pixblockdsp.asm'),
   'png_decoder' : files('pngdsp.asm'),
-  'prores_decoder' : files('proresdsp.asm'),
+  'prores_decoder' : [], # MANUAL
   'qpeldsp' : files('qpeldsp.asm','fpel.asm','qpel.asm'),
   'rv34dsp' : files('rv34dsp.asm'),
   'rv40_decoder' : files('rv40dsp.asm'),
@@ -181,10 +181,16 @@ elif conf.get('x86_64', 0) == 1
     'apv_decoder': libavcodec_x86_x86asm_optional_sources['apv_decoder'] + files('apv_dsp.asm'),
     'idctdsp': libavcodec_x86_x86asm_optional_sources ['idctdsp'] + files('simple_idct10.asm'),
     'cfhd_encoder': libavcodec_x86_x86asm_optional_sources ['cfhd_encoder'] + files('cfhdencdsp.asm'),
+    'mlp_decoder': libavcodec_x86_x86asm_optional_sources ['mlp_decoder'] + files('mlpdsp.asm'),
     'prores_decoder': libavcodec_x86_x86asm_optional_sources ['prores_decoder'] + files('proresdsp.asm'),
     'truehd_decoder': libavcodec_x86_x86asm_optional_sources ['truehd_decoder'] + files('mlpdsp.asm'),
-    'vp9_decoder': libavcodec_x86_x86asm_optional_sources ['vp9_decoder'] + files('vp9itxfm_avx512.asm', 'vp9itxfm_16bpp_avx512.asm',),
   }
+
+  if conf.get('avx512icl_external', 0) == 1
+    libavcodec_x86_x86asm_optional_sources += {
+      'vp9_decoder': libavcodec_x86_x86asm_optional_sources ['vp9_decoder'] + files('vp9itxfm_avx512.asm', 'vp9itxfm_16bpp_avx512.asm',),
+    }
+  endif
 
   if conf.get('hevc_decoder') == 1
     libavcodec_x86_optional_sources += {

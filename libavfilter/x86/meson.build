@@ -89,7 +89,7 @@ libavfilter_x86_x86asm_optional_sources = {
   'threshold_filter' : files('vf_threshold.asm'),
   'tinterlace_filter' : files('vf_interlace.asm'),
   'transpose_filter' : files('vf_transpose.asm'),
-  'v360_filter' : files('vf_v360.asm'),
+  'v360_filter' : [], # MANUAL
   'volume_filter' : files('af_volume.asm'),
   'w3fdif_filter' : files('vf_w3fdif.asm'),
   'xpsnr_filter' : files('vf_psnr.asm'),
@@ -106,11 +106,35 @@ if conf.get('x86_64', 0) == 1
   # panic: ../libavcodec/x86/simple_idct10.asm: assertion cv8_state.source_files != NULL failed at output/codeview.c:512
   conditionally_empty_asms = {
     'atadenoise_filter' : files('vf_atadenoise.asm'),
-    'blackdetect_filter': files('vf_blackdetect.asm'),
-    'colordetect_filter': files('vf_colordetect.asm'),
     'ebur128_filter': files('f_ebur128.asm'),
     'haldclut_filter': files('vf_lut3d.asm'),
-    'nlmeans_filter': files('vf_nlmeans.asm'),
+  }
+
+  foreach k, v : conditionally_empty_asms
+    libavfilter_x86_x86asm_optional_sources += {
+      k: libavfilter_x86_x86asm_optional_sources[k] + v
+    }
+  endforeach
+
+  if conf.get('avx2_external', 0) == 1
+    conditionally_empty_asms = {
+      'nlmeans_filter': files('vf_nlmeans.asm'),
+    }
+
+    foreach k, v : conditionally_empty_asms
+      libavfilter_x86_x86asm_optional_sources += {
+        k: libavfilter_x86_x86asm_optional_sources[k] + v
+      }
+    endforeach
+  endif
+endif
+
+if conf.get('avx2_external', 0) == 1
+  # Alternatively,
+  # panic: ../libavcodec/x86/simple_idct10.asm: assertion cv8_state.source_files != NULL failed at output/codeview.c:512
+  conditionally_empty_asms = {
+    'blackdetect_filter': files('vf_blackdetect.asm'),
+    'v360_filter' : files('vf_v360.asm'),
   }
 
   foreach k, v : conditionally_empty_asms
@@ -119,3 +143,18 @@ if conf.get('x86_64', 0) == 1
     }
   endforeach
 endif
+
+if conf.get('avx2_external', 0) == 1 or conf.get('avx512icl_external', 0) == 1
+  # Alternatively,
+  # panic: ../libavcodec/x86/simple_idct10.asm: assertion cv8_state.source_files != NULL failed at output/codeview.c:512
+  conditionally_empty_asms = {
+    'colordetect_filter': files('vf_colordetect.asm'),
+  }
+
+  foreach k, v : conditionally_empty_asms
+    libavfilter_x86_x86asm_optional_sources += {
+      k: libavfilter_x86_x86asm_optional_sources[k] + v
+    }
+  endforeach
+endif
+
