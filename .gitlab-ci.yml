@@ -187,16 +187,7 @@ vs2019 x86:
   stage: 'build'
   variables:
     ARCH: 'x86'
-  artifacts:
-    paths:
-      - build1/meson-logs/
-      - build2/meson-logs/
-  script:
-    # MSVC hangs while linking with -Dasm=enabled (default), so only run setup with -Dasm=enabled
-    - cmd.exe /C "C:\BuildTools\Common7\Tools\VsDevCmd.bat -host_arch=amd64 -arch=$env:ARCH &&
-        meson build1 $env:MESON_ARGS"
-    - cmd.exe /C "C:\BuildTools\Common7\Tools\VsDevCmd.bat -host_arch=amd64 -arch=$env:ARCH &&
-        meson build2 $env:MESON_ARGS -Dasm=disabled && ninja -C build2 && ninja -C build2 test"
+    MESON_ARGS: '--optimization=0 --debug'
 
 vs2019 arm64 cross:
   extends: '.build windows'
