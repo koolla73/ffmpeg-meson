@@ -972,7 +972,7 @@ check_pkg_config = [
   ['libvorbis', ['vorbis/codec.h'], ['vorbis_info_init'], {'pkg': 'vorbis'}],
   ['libvorbisenc', ['vorbis/vorbisenc.h'], ['vorbis_encode_init'], {'pkg': 'vorbisenc'}],
   ['libvpl', ['mfxvideo.h', 'mfxdispatcher.h'], ['MFXLoad'], {'pkg': 'vpl', 'version': '>= 2.6', 'c_args': ['-DMFX_DEPRECATED_OFF']}],
-  ['libvvenc', ['vvenc/vvenc.h'], ['MFXLoad'], {'pkg': 'vpl', 'version': '>= 1.6.1'}],
+  ['libvvenc', ['vvenc/vvenc.h'], ['vvenc_encoder_create'], {'pkg': 'libvvenc', 'version': '>= 1.6.1'}],
   ['libx264', ['stdint.h', 'x264.h'], ['x264_encoder_encode'], {'pkg': 'x264'}],
   ['libx265', ['x265.h'], ['x265_api_get'], {'pkg': 'x265'}],
   ['libxcb', ['xcb/xcb.h'], ['xcb_connect'], {'pkg': 'xcb', 'version': '>= 1.4'}],
