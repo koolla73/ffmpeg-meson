@@ -1011,6 +1011,7 @@ check_pkg_config = [
 ]
 
 if get_option('libvpx').allowed()
+  conf.set('libvpx', 1)
   check_pkg_config += [
     ['libvpx_vp8_decoder', ['vpx/vpx_decoder.h', 'vpx/vp8dx.h'], ['vpx_codec_vp8_dx'], {'pkg': 'vpx', 'version': '>= 1.4.0'}],
     ['libvpx_vp8_encoder', ['vpx/vpx_encoder.h', 'vpx/vp8cx.h'], ['vpx_codec_vp8_cx'], {'pkg': 'vpx', 'version': '>= 1.4.0'}],
@@ -2653,6 +2654,18 @@ if conf.get('libzvbi') == 1
   conf.set('libzvbi', cc.compute_int(
     'VBI_VERSION_MAJOR > 0 || VBI_VERSION_MINOR > 2 || VBI_VERSION_MINOR == 2 && VBI_VERSION_MICRO >= 28',
     prefix: '#include <libzvbi.h>', dependencies: libzvbi_extra_deps))
+endif
+
+# Manual check for libvpx
+if conf.get('libvpx', 0) == 1
+  any_vpx_component = (conf.get('libvpx_vp8_decoder') == 1) or (conf.get('libvpx_vp8_encoder') == 1) or (conf.get('libvpx_vp9_decoder') == 1) or (conf.get('libvpx_vp9_encoder') == 1)
+  if not any_vpx_component
+    # Not having any component and setting main libvpx is not allowed, but if user enabled it we need to error out
+    if get_option('libvpx').enabled()
+      error('No vpx component can be found, either disable libvpx with -Dlibvpx=disable or install libvpx')
+    endif
+    conf.set('libvpx', 0)
+  endif
 endif
 
 # Manual patch for Cairo
