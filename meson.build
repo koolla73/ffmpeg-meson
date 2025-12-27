@@ -2614,7 +2614,7 @@ int main() {
 ''', name: 'Supports D3D12 encoder'))
 
 # Manual check for libmfx
-if conf.get('libmfx') == 1 and conf.get('libvpx') == 1
+if conf.get('libmfx') == 1 and conf.get('libvpl') == 1
   error('can not use libmfx and libvpl together')
 elif conf.get('libmfx') == 1
   if not cc.links(cpp_cond.format('mfx/mfxdefs.h', 'MFX_VERSION >= 1028 && MFX_VERSION < 2000'), name: 'libmfx version')
