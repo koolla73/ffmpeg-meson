@@ -1022,7 +1022,7 @@ endif
 
 if get_option('libwebp').allowed()
   check_pkg_config += [
-    ['libwebp_encoder', ['webp/encode.h'], ['WebPGetEncoderVersion'], {'version': '>= 0.2.0'}],
+    ['libwebp_encoder', ['webp/encode.h'], ['WebPGetEncoderVersion'], {'pkg': 'libwebp', 'version': '>= 0.2.0'}],
     ['libwebp_anim_encoder', ['webp/mux.h'], ['WebPAnimEncoderOptionsInit'], {'pkg': 'libwebpmux', 'version': '>= 0.4.0'}],
   ]
 endif
