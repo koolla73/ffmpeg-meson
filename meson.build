@@ -476,6 +476,7 @@ system_libraries = [
   'bcrypt',
   'vaapi_drm',
   'vaapi_x11',
+  'vaapi_win32',
   'vdpau_x11',
 ]
 
@@ -995,11 +996,16 @@ check_pkg_config = [
   ['sdl2', ['SDL_events.h'], ['SDL_PollEvent'], {'version': ['>= 2.0.1', '< 3.0.0']}],
   ['sndio', ['sndio.h'], ['sio_open'], {'pkg': 'sndio'}],
   ['vulkan', ['vulkan/vulkan.h'], ['vkCreateInstance'], {'pkg': 'vulkan', 'version': '>= 1.3.277'}],
-  ['xlib_x11', ['X11/Xlib.h'], ['XPending'], {'pkg': 'xlib'}],
-  ['xlib_xext', ['X11/Xlib.h', 'X11/extensions/XShm.h'], ['XShmAttach'], {'pkg': 'xext'}],
-  ['xlib_xv', ['X11/Xlib.h', 'X11/extensions/Xvlib.h'], ['XvGetPortAttribute'], {'pkg': 'xv'}],
   ['zlib', ['zlib.h'], ['zlibVersion'], {'pkg': 'zlib'}],
 ]
+
+if get_option('xlib').allowed()
+  check_pkg_config += [
+    ['xlib_x11', ['X11/Xlib.h'], ['XPending'], {'pkg': 'xlib'}],
+    ['xlib_xext', ['X11/Xlib.h', 'X11/extensions/XShm.h'], ['XShmAttach'], {'pkg': 'xext'}],
+    ['xlib_xv', ['X11/Xlib.h', 'X11/extensions/Xvlib.h'], ['XvGetPortAttribute'], {'pkg': 'xv'}],
+  ]
+endif
 
 if get_option('libvpx').allowed()
   conf.set('libvpx', 1)
@@ -1141,9 +1147,6 @@ check_components = [
     {'preconditions': ['libm'], 'extra_deps': ['libm_extra_deps']}],
   ['libxavs', ['stdint.h', 'xavs.h'], ['xavs_encoder_encode'], ['xavs'],
     {'preconditions': ['libm'], 'extra_deps': ['libm_extra_deps']}],
-  ['xlib_x11', ['X11/Xlib.h'], ['XPending'], ['X11']],
-  ['xlib_xext', ['X11/Xlib.h', 'X11/extensions/XShm.h'], ['XShmAttach'], ['Xext']],
-  ['xlib_xv', ['X11/Xlib.h', 'X11/extensions/Xvlib.h'], ['XvGetPortAttribute'], ['Xv']],
 ]
 
 if get_option('avfoundation').allowed()
@@ -2604,7 +2607,7 @@ if get_option('vapoursynth').allowed()
 endif
 
 foreach req : ['xlib_x11', 'xlib_xext', 'xlib_xv']
-  if conf.get(req) == 0
+  if conf.get(req, 0) == 0
     conf.set10('xlib', false)
     break
   endif
