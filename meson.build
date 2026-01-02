@@ -977,7 +977,7 @@ check_pkg_config = [
   ['libtls', ['tls.h'], ['tls_configure'], {}],
   ['libv4l2', ['libv4l2.h'], ['v4l2_ioctl'], {}],
   ['libvidstab', ['vid.stab/libvidstab.h'], ['vsMotionDetectInit'], {'pkg': 'vidstab', 'version': '>= 0.98'}],
-  ['libvmaf', ['libvmaf.h'], ['compute_vmaf'], {'version': '>= 2.0.0'}],
+  ['libvmaf', ['libvmaf.h'], ['vmaf_init'], {'version': '>= 2.0.0'}],
   ['libvorbis', ['vorbis/codec.h'], ['vorbis_info_init'], {'pkg': 'vorbis'}],
   ['libvorbisenc', ['vorbis/vorbisenc.h'], ['vorbis_encode_init'], {'pkg': 'vorbisenc'}],
   ['libvpl', ['mfxvideo.h', 'mfxdispatcher.h'], ['MFXLoad'], {'pkg': 'vpl', 'version': '>= 2.6', 'c_args': ['-DMFX_DEPRECATED_OFF']}],
