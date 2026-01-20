@@ -2315,6 +2315,9 @@ foreach check : all_checks
         if opts.has_key('versions')
           foreach version: opts['versions']
             dep = dependency(pkg_name, required: false, version: version, static: conf.get('static').is_odd())
+            if dep.found()
+              break
+            endif
           endforeach
 
           if not dep.found() and req.enabled()
