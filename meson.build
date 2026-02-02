@@ -1061,8 +1061,6 @@ if get_option('vaapi').allowed()
   endif
 endif
 
-conf.set10('vaapi_1', cc.links(cpp_cond.format('va/va.h', 'VA_CHECK_VERSION(1, 0, 0)')))
-
 foreach check : check_pkg_config
   all_checks += [['pkg-config', check]]
 endforeach
@@ -2741,6 +2739,14 @@ foreach req : ['xlib_x11', 'xlib_xext', 'xlib_xv']
     break
   endif
 endforeach
+
+# Manual check for vaapi (must be executed after pkg-config)
+if conf.get('vaapi', 0) == 1
+  conf.set10('vaapi_1', cc.links(
+    cpp_cond.format('va/va.h', 'VA_CHECK_VERSION(1, 0, 0)')),
+    name: 'VA-API is v1.0 or higher'
+  )
+endif
 
 x86asm_checks = []
 
