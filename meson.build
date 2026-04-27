@@ -20,7 +20,7 @@ project('FFmpeg', 'c', 'cpp',
   meson_version: '>= 1.4.0',
   license: 'LGPL2.1+',
   # Static libraries by default following upstream
-  default_options: [ 'buildtype=debugoptimized', 'c_std=c17', 'cpp_std=c++11', 'default_library=static'],
+  default_options: [ 'buildtype=debugoptimized', 'c_std=c17', 'cpp_std=c++11', 'default_library=static', 'b_staticpic=true'],
   version: '8.0.2',
 )
 
@@ -843,6 +843,17 @@ endif
 # PIC is Meson managed, the compiler may not support it by
 # default but can be enabled through b_staticpic
 conf.set10('pic', get_option('b_staticpic'))
+
+sanitizers = get_option('b_sanitize')
+if sanitizers != ''
+  # libswscale (<8.0) and libavcodec require PIC to build with *SAN
+  # upstream checks this only against GCC (for TSAN) and against non-windows
+  # (for fPIC/-DPIC, later)
+  if conf.get('pic', 0) == 0 and (host_system == 'linux' or cc.get_id() == 'gcc')
+    error('-Db_staticpic=true is required when building with sanitizers')
+  endif
+  project_c_args += cc.get_supported_arguments('-fno-omit-frame-pointer')
+endif
 
 conf.set10('winrt', cc.links(cpp_cond.format('windows.h', '!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)')))
 
