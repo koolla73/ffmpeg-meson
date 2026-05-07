@@ -2709,9 +2709,14 @@ endif
 
 # Manual (abridged) check for Zlib/GZIP support
 if conf.get('zlib') == 1
-  conf.set10('zlib_gzip', true)
-  gzip_exe = find_program('gzip', native: true)
+  gzip_exe = find_program('gzip', native: true, required: false)
+  conf.set10('zlib_gzip', gzip_exe.found())
   conf.set10('gzip', gzip_exe.found())
+
+  if not gzip_exe.found()
+    conf.set10('ptx_compression', false)
+    conf.set10('resource_compression', false)
+  endif
 else
   conf.set10('ptx_compression', false)
   conf.set10('resource_compression', false)
