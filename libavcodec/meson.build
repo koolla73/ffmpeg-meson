@@ -1244,11 +1244,16 @@ subdir('opus')
 subdir('vulkan')
 subdir('vvc')
 
-libavcodec_optional_includes = {}
-
 foreach i : [libavcodec_aac_optional_sources, libavcodec_bsf_optional_sources, libavcodec_hevc_optional_sources, libavcodec_opus_optional_sources, libavcodec_vvc_optional_sources]
   foreach k, v: i
     libavcodec_optional_sources += {k: libavcodec_optional_sources.get(k, []) + v}
+  endforeach
+endforeach
+
+libavcodec_optional_includes = {}
+
+foreach i : [libavcodec_optional_sources]
+  foreach k, v: i
     libavcodec_optional_includes += {k: include_directories('.')}
   endforeach
 endforeach
