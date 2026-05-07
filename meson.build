@@ -1069,6 +1069,12 @@ if get_option('vaapi').allowed()
       ['vaapi_x11', ['va/va_x11.h'], ['vaGetDisplay'], {'pkg': 'libva-x11'}],
     ]
   endif
+else
+  # when skipping checks for vaapi, we should also
+  # explicitly write that it is not available. Otherwise
+  # it will be weakly activated by depgraph.py, since it is
+  # "suggested" by `avutil`.
+  conf.set10('vaapi', false)
 endif
 
 foreach check : check_pkg_config
