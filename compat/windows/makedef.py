@@ -139,7 +139,7 @@ if __name__ == '__main__':
         if s.returncode != 0:
             # -U was added only in Binutils 2.39
             s = subprocess.run(
-                [args.nm, '--defined-only', '-g', libname],
+                [args.nm, '--defined-only', '-g', '-j', libname],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 universal_newlines=True,
