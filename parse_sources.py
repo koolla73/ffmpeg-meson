@@ -37,22 +37,25 @@ SOURCE_TYPE_EXTS_MAP = {
     'vfp': ASM_EXTS,
     'neon': ASM_EXTS,
     'sve': ASM_EXTS,
+    'sme': ASM_EXTS,
+    'sme2': ASM_EXTS,
     'test-prog': ['c'],
     'mmx': ['c'],
     'shlib': ['c'],
     'slib': ['c'],
     'cuda': ['cu'],
-    # 'vulkan': ['comp'],
+    'vulkan': ['comp.glsl'],
 }
 SOURCE_TYPE_DOUBLE_EXTS_MAP = {
     'metallib.o': ['metal'],
-    'ptx.o': ['cu']
+    'ptx.o': ['cu'],
+    'comp.spv.o': ['comp.glsl'],
 }
 SOURCE_TYPE_DIRS = {'test-prog': 'tests'}
 
 
 def add_source(f, source: str, prefix='', suffix=''):
-    if not source.startswith(('opencl/', 'metal/', 'cuda/', '../', 'h26x/', 'hevc/')):
+    if not source.startswith(('opencl/', 'metal/', 'cuda/', '../', 'h26x/', 'hevc/', 'vulkan/')):
         source = source.split('/', maxsplit=1)[-1]
     f.write("%s'%s'%s" % (prefix, source, suffix))
 
@@ -74,10 +77,13 @@ def make_to_meson(path):
       'vfp': defaultdict(list),
       'neon': defaultdict(list),
       'sve': defaultdict(list),
+      'sme': defaultdict(list),
+      'sme2': defaultdict(list),
       'test-prog': defaultdict(list),
       'mmx': defaultdict(list),
       'shlib': defaultdict(list),
       'slib': defaultdict(list),
+      'vulkan': defaultdict(list),
     }
 
     skipped = set()
@@ -224,6 +230,14 @@ def make_to_meson(path):
                 label = ''
                 ofiles = l.split('=')[1]
                 source_type = 'sve'
+            elif re.match('SME-OBJS.*=.*', l):
+                label = ''
+                ofiles = l.split('=')[1]
+                source_type = 'sme'
+            elif re.match(r'SME2-OBJS-.*CONFIG.*\+\=.*', l):
+                label, ofiles = l.split('+=')
+                label = label.split('CONFIG_')[1].rstrip(' )')
+                source_type = 'sme2'
             elif re.match(r'TESTPROGS-.*CONFIG.*\+\=.*', l):
                 label, ofiles = l.split('+=')
                 label = label.split('CONFIG_')[1].rstrip(' )')
@@ -338,11 +352,14 @@ def make_to_meson(path):
         ('armv8_', source_maps['armv8']),
         ('neon_', source_maps['neon']),
         ('sve_', source_maps['sve']),
+        ('sme_', source_maps['sme']),
+        ('sme2_', source_maps['sme2']),
         ('vfp_', source_maps['vfp']),
         ('mmx_', source_maps['mmx']),
         ('shlib_', source_maps['shlib']),
         ('slib_', source_maps['slib']),
         ('cuda_', cuda_source_maps),
+        ('vulkan_', source_maps['vulkan'])
     )
 
     for source_type, map_ in source_types:

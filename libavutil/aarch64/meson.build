@@ -4,6 +4,10 @@ libavutil_aarch64_sources = files(
   'tx_float_init.c',
 )
 
+libavutil_aarch64_armv8_sources = files(
+  'crc.S',
+)
+
 libavutil_aarch64_neon_sources = files(
   'float_dsp_neon.S',
   'tx_float_neon.S',
@@ -11,5 +15,9 @@ libavutil_aarch64_neon_sources = files(
 
 libavutil_aarch64_sve_sources = files(
   'cpu_sve.S',
+)
+
+libavutil_aarch64_sme_sources = files(
+  'cpu_sme.S',
 )
 

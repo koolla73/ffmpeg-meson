@@ -37,6 +37,10 @@ libswscale_headers = files(
   'version_major.h',
 )
 
+libswscale_optional_sources = {
+  'unstable' : files('ops.c','ops_backend.c','ops_chain.c','ops_dispatch.c','ops_memcpy.c','ops_optimizer.c'),
+}
+
 libswscale_shlib_sources = files(
   'log2_tab.c',
   'half2float.c',
@@ -47,6 +51,7 @@ libswscale_tests = [
   ['floatimg_cmp', files('tests/floatimg_cmp.c')],
   ['pixdesc_query', files('tests/pixdesc_query.c')],
   # MANUAL ['swscale', files('tests/swscale.c')],
+  # MANUAL ['sws_ops', files('tests/sws_ops.c')],
 ]
 
 #### --- END GENERATED --- ####

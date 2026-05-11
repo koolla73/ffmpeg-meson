@@ -12,6 +12,7 @@ libavcodec_aarch64_optional_sources = {
   'h264pred' : files('h264pred_init.c'),
   'h264qpel' : files('h264qpel_init_aarch64.c'),
   'hpeldsp' : files('hpeldsp_init_aarch64.c'),
+  'huffyuvdsp' : files('huffyuvdsp_init_aarch64.c'),
   'idctdsp' : files('idctdsp_init_aarch64.c'),
   'me_cmp' : files('me_cmp_init_aarch64.c'),
   'mpegaudiodsp' : files('mpegaudiodsp_init.c'),
@@ -19,6 +20,7 @@ libavcodec_aarch64_optional_sources = {
   'neon_clobber_test' : files('neontest.c'),
   'opus_decoder' : files('opusdsp_init.c'),
   'pixblockdsp' : files('pixblockdsp_init_aarch64.c'),
+  'png_decoder' : files('pngdsp_init.c'),
   'rv40_decoder' : files('rv40dsp_init_aarch64.c'),
   'vc1dsp' : files('vc1dsp_init_aarch64.c'),
   'videodsp' : files('videodsp_init.c'),
@@ -42,14 +44,16 @@ libavcodec_aarch64_neon_optional_sources = {
   'h264dsp' : files('h264dsp_neon.S','h264idct_neon.S'),
   'h264pred' : files('h264pred_neon.S'),
   'h264qpel' : files('h264qpel_neon.S','hpeldsp_neon.S'),
-  'hevc_decoder' : files('hevcdsp_deblock_neon.S','hevcdsp_idct_neon.S','hevcdsp_init_aarch64.c'), # MANUAL
+  'hevc_decoder' : files('hevcdsp_deblock_neon.S','hevcdsp_dequant_neon.S','hevcdsp_idct_neon.S','hevcdsp_init_aarch64.c'), # MANUAL
   'hpeldsp' : files('hpeldsp_neon.S'),
+  'huffyuvdsp' : files('huffyuvdsp_neon.S'),
   'idctdsp' : files('idctdsp_neon.S','simple_idct_neon.S'),
   'me_cmp' : files('me_cmp_neon.S'),
   'mpegaudiodsp' : files('mpegaudiodsp_neon.S'),
   'mpegvideoencdsp' : files('mpegvideoencdsp_neon.S'),
   'opus_decoder' : files('opusdsp_neon.S'),
   'pixblockdsp' : files('pixblockdsp_neon.S'),
+  'png_decoder' : files('pngdsp_neon.S'),
   'vc1dsp' : files('vc1dsp_neon.S'),
   'vorbis_decoder' : files('vorbisdsp_neon.S'),
   'vp8dsp' : files('vp8dsp_neon.S'),
@@ -62,6 +66,7 @@ subdir('vvc')
 
 libavcodec_aarch64_optional_sources += libavcodec_aarch64_vvc_optional_sources
 libavcodec_aarch64_neon_optional_sources += libavcodec_aarch64_vvc_neon_optional_sources
+libavcodec_aarch64_sme2_optional_sources = libavcodec_aarch64_vvc_sme2_optional_sources
 
 if conf.get('hevc_decoder') == 1
   libavcodec_aarch64_neon_optional_sources += {

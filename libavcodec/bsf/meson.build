@@ -1,5 +1,6 @@
 libavcodec_bsf_optional_sources = {
   'aac_adtstoasc_bsf' : files('aac_adtstoasc.c'),
+  'ahx_to_mp2_bsf' : files('ahx_to_mp2.c'),
   'apv_metadata_bsf' : files('apv_metadata.c'),
   'av1_frame_merge_bsf' : files('av1_frame_merge.c'),
   'av1_frame_split_bsf' : files('av1_frame_split.c'),
@@ -22,6 +23,7 @@ libavcodec_bsf_optional_sources = {
   'hevc_metadata_bsf' : files('h265_metadata.c'),
   'hevc_mp4toannexb_bsf' : files('hevc_mp4toannexb.c'),
   'imx_dump_header_bsf' : files('imx_dump_header.c'),
+  'lcevc_metadata_bsf' : files('lcevc_metadata.c'),
   'media100_to_mjpegb_bsf' : files('media100_to_mjpegb.c'),
   'mjpeg2jpeg_bsf' : files('mjpeg2jpeg.c'),
   'mjpega_dump_header_bsf' : files('mjpega_dump_header.c'),

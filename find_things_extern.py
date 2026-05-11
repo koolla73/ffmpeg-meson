@@ -26,7 +26,7 @@ EXTERN_THINGS = [
     ['FFInputFormat', 'demuxer', 'libavformat/allformats.c', 'demuxer_list'],
     ['FFCodec', 'encoder', 'libavcodec/allcodecs.c', 'encoder_list'],
     ['FFCodec', 'decoder', 'libavcodec/allcodecs.c', 'decoder_list'],
-    ['AVCodecParser', 'parser', 'libavcodec/parsers.c', 'parser_list'],
+    ['FFCodecParser', 'parser', 'libavcodec/parsers.c', 'parser_list'],
     ['FFBitStreamFilter', 'bsf', 'libavcodec/bitstream_filters.c', 'bsf_list'],
     ['FFHWAccel', 'hwaccel', 'libavcodec/hwaccels.h', 'hwaccel_list'],
     ['URLProtocol', 'protocol', 'libavformat/protocols.c', 'protocol_list'],

@@ -20,8 +20,9 @@ project('FFmpeg', 'c', 'cpp',
   meson_version: '>= 1.4.0',
   license: 'LGPL2.1+',
   # Static libraries by default following upstream
-  default_options: [ 'buildtype=debugoptimized', 'c_std=c17', 'cpp_std=c++11', 'default_library=static', 'b_staticpic=true'],
-  version: '8.0.2',
+  # C++17 since 8.1
+  default_options: [ 'buildtype=debugoptimized', 'c_std=c17', 'cpp_std=c++17', 'default_library=static', 'b_staticpic=true'],
+  version: '8.1',
 )
 
 # HOWTO:
@@ -105,18 +106,25 @@ project_c_args = [
   '-D_ISOC11_SOURCE',
   '-D_GNU_SOURCE',
   '-D_LARGEFILE_SOURCE',
+
+  '-Werror=unused-command-line-argument',
+  '-Werror=unknown-warning-option',
+
   '-Wdisabled-optimization',
   '-Wpointer-arith',
   '-Wredundant-decls',
   '-Wwrite-strings',
   '-Wtype-limits',
   '-Wundef',
-  '-Wmissing-prototypes',
-  '-Wstrict-prototypes',
   '-Wempty-body',
 
-  '-Werror=unused-command-line-argument',
-  '-Werror=unknown-warning-option',
+  # Warn about excessive stack usage, using a 120 KiB per-function threshold.
+  # This roughly matches the default thread stack size on Musl, which is 128 KiB,
+  # leaving some headroom for caller frames.
+  '-Wstack-usage=122880',
+  '-Wmissing-prototypes',
+  '-Wstrict-prototypes',
+  '-Wunterminated-string-initialization',
 
   '-Wno-parentheses',
   '-Wno-switch',
@@ -129,7 +137,6 @@ project_c_args = [
   '-Wno-microsoft-enum-forward-reference',
   '-Wno-deprecated-declarations',
   '-Wno-unused-variable',
-  '-Wno-maybe-uninitialized',
   # GCC 14 breaks these: https://gcc.gnu.org/gcc-14/porting_to.html
   # ./libavdevice/indev_list.c:2:5: error: initialization of ‘const AVInputFormat *’ from incompatible pointer type ‘const FFInputFormat *’ [-Wincompatible-pointer-types]
   '-Wno-incompatible-pointer-types',
@@ -148,6 +155,10 @@ project_c_args = [
 # Can't set c_args in default_options for a subproject
 if get_option('suppress_warnings') and meson.is_subproject()
   project_c_args += ['-w']
+endif
+
+if get_option('warning_level') in ['2', '3', 'everything']
+  project_c_args += ['-Wcast-qual', '-Wno-maybe-uninitialized']
 endif
 
 if not cc.compiles('''#include <assert.h>
@@ -247,6 +258,7 @@ arch_ext_list_arm = [
   'armv6',
   'armv6t2',
   'armv8',
+  'arm_crc',
   'dotprod',
   'i8mm',
   'neon',
@@ -255,6 +267,9 @@ arch_ext_list_arm = [
   'setend',
   'sve',
   'sve2',
+  'sme',
+  'sme_i16i64',
+  'sme2',
 ]
 
 arch_ext_list_ppc = [
@@ -293,6 +308,7 @@ arch_ext_list_loongson = [
 
 arch_ext_list_x86_simd = [
   'aesni',
+  'clmul',
   'amd3dnow',
   'amd3dnowext',
   'avx',
@@ -366,7 +382,6 @@ headers_list = [
   'linux_dma_buf_h',
   'linux_perf_event_h',
   'malloc_h',
-  'opencv2_core_core_c_h',
   'poll_h',
   'pthread_np_h',
   'sys_hwprobe_h',
@@ -515,10 +530,14 @@ atomics_list = [
 
 toolchain_features = [
   'as_arch_directive',
+  'as_archext_crc_directive',
   'as_archext_dotprod_directive',
   'as_archext_i8mm_directive',
   'as_archext_sve_directive',
   'as_archext_sve2_directive',
+  'as_archext_sme_directive',
+  'as_archext_sme_i16i64_directive',
+  'as_archext_sme2_directive',
   'as_dn_directive',
   'as_fpu_directive',
   'as_func',
@@ -544,6 +563,9 @@ toolchain_features = [
 types_list = [
   'DPI_AWARENESS_CONTEXT',
   'IDXGIOutput5',
+  '__x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession3',
+  '__x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession5',
+  'IDirect3DDxgiInterfaceAccess',
   'kCMVideoCodecType_HEVC',
   'kCMVideoCodecType_HEVCWithAlpha',
   'kCMVideoCodecType_VP9',
@@ -555,6 +577,7 @@ types_list = [
   'kCVPixelFormatType_444YpCbCr8BiPlanarVideoRange',
   'kCVPixelFormatType_444YpCbCr10BiPlanarVideoRange',
   'kCVPixelFormatType_444YpCbCr16BiPlanarVideoRange',
+  'kCVPixelFormatType_422YpCbCr8_yuvs',
   'kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ',
   'kCVImageBufferTransferFunction_ITU_R_2100_HLG',
   'kCVImageBufferTransferFunction_Linear',
@@ -591,7 +614,8 @@ conf.set10('faandct', true)
 conf.set10('faanidct', true)
 conf.set10('iamf', true)
 conf.set10('optimizations', get_option('optimization') != '0')
-conf.set10('ptx_compression', true)
+conf.set10('small', get_option('optimization') == 's')
+conf.set10('shader_compression', true)
 conf.set10('resource_compression', true)
 conf.set10('runtime_cpudetect', true)
 conf.set10('safe_bitstream_reader', true)
@@ -698,7 +722,7 @@ library_gpl_list = [
 library_nonfree_list = [
   'decklink',
   'libfdk_aac',
-  'libtls',
+  'libmpeghdec',
 ]
 
 library_version3_list = [
@@ -765,9 +789,9 @@ elif cc.links(cpp_cond.format('_mingw.h', 'defined __MINGW64_VERSION_MAJOR'))
     compat_objs += files('compat/msvcrt/snprintf.c')
     project_c_args += ['-include', meson.current_source_dir() / 'compat/msvcrt/snprintf.h']
   endif
-  project_c_args += ['-U__STRICT_ANSI__', '-D__USE_MINGW_ANSI_STDIO=1']
-  if cc.get_id() == 'gcc'
-    project_c_args += ['-D__printf__=__gnu_printf__']
+  project_c_args += ['-U__STRICT_ANSI__']
+  if not cc.has_header_symbol('crtdefs.h', '_UCRT')
+    project_c_args += ['-D__USE_MINGW_ANSI_STDIO=1']
   endif
   if cc.links(cpp_cond.format('windows.h', '!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600'))
     project_c_args += ['-D_WIN32_WINNT=0x0600']
@@ -778,15 +802,15 @@ elif (cc.links(cpp_cond.format('_mingw.h', 'defined __MINGW_VERSION')) or
   if cc.links(cpp_cond.format('_mingw.h', '__MINGW32_MAJOR_VERSION > 3 || (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15'))
     error('MinGW32 runtime version must be >= 3.15')
   endif
-  project_c_args += ['-U__STRICT_ANSI__', '-D__USE_MINGW_ANSI_STDIO=1']
+  project_c_args += ['-U__STRICT_ANSI__']
+  if not cc.has_header_symbol('crtdefs.h', '_UCRT')
+    project_c_args += ['-D__USE_MINGW_ANSI_STDIO=1']
+  endif
   if cc.links(cpp_cond.format('_mingw.h', '__MSVCRT_VERSION__ < 0x0700'))
     project_c_args += ['-D__MSVCRT_VERSION__=0x0700']
   endif
   if cc.links(cpp_cond.format('windows.h', '!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600'))
     project_c_args += ['-D_WIN32_WINNT=0x0600']
-  endif
-  if cc.get_id() == 'gcc'
-    project_c_args += ['-D__printf__=__gnu_printf__']
   endif
 elif cc.links(cpp_cond.format('crtversion.h', 'defined _VC_CRT_MAJOR_VERSION'))
   libc_type = 'msvcrt'
@@ -920,6 +944,7 @@ endforeach
 
 check_pkg_config = [
   ['alsa', ['alsa/asoundlib.h'], ['snd_pcm_htimestamp'], {}],
+  ['cairo', ['cairo.h'], ['cairo_create'], {'pkg': 'cairo'}],
   ['chromaprint', ['chromaprint.h'], ['chromaprint_get_version'], {'pkg': 'chromaprint'}],
   ['ffnvcodec', ['ffnvcodec/nvEncodeAPI.h', 'ffnvcodec/dynlink_cuda.h', 'ffnvcodec/dynlink_cuviddec.h', 'ffnvcodec/dynlink_nvcuvid.h'],
     [], {'versions': ['>= 12.0.16.0', ['>= 11.1.5.2', '< 12.0'], ['>= 11.0.10.2', '< 11.1'], ['>= 8.1.24.11', '< 8.2']]}],
@@ -950,13 +975,13 @@ check_pkg_config = [
   ['libkvazaar', ['kvazaar.h'], ['kvz_api_get'], {'pkg': 'kvazaar', 'version': '>= 0.8.1'}],
   ['liblc3', ['lc3.h'], ['lc3_hr_setup_encoder'], {'pkg': 'lc3', 'version': ['>= 1.1.0']}],
   ['liblensfun', ['lensfun.h'], ['lf_db_new'], {'pkg': 'lensfun'}],
-  ['liblcevc_dec', ['LCEVC/lcevc_dec.h'], ['LCEVC_CreateDecoder'], {'pkg': 'lcevc_dec', 'version': ['>= 2.0.0']}],
+  ['liblcevc_dec', ['LCEVC/lcevc_dec.h'], ['LCEVC_CreateDecoder'], {'pkg': 'lcevc_dec', 'version': ['>= 4.0.0']}],
   ['libmfx', ['mfx/mfxvideo.h'], ['MFXInit'], {'pkg': 'libmfx', 'version': ['>= 1.28', '< 2.0']}],
   ['libmodplug', ['libmodplug/modplug.h'], ['ModPlug_Load'], {}],
   ['libopencv', ['opencv2/core/core_c.h'], ['cvCreateImageHeader'], {'pkg': 'opencv'}],
   ['libopencv', ['opencv/cxcore.h'], ['cvCreateImageHeader'], {'pkg': 'opencv'}],
   ['libopenh264', ['wels/codec_api.h'], ['WelsGetCodecVersion'], {'pkg': 'openh264', 'version': '>= 1.3.0'}],
-  ['libdav1d', ['dav1d/dav1d.h'], ['dav1d_version'], {'pkg': 'dav1d', 'version': '>= 0.4.0'}],
+  ['libdav1d', ['dav1d/dav1d.h'], ['dav1d_version'], {'pkg': 'dav1d', 'version': '>= 1.0.0'}],
   ['libopenjpeg', ['openjpeg.h'], ['opj_version'], {'pkg': 'libopenjp2',
                                                     'version': '>= 2.1.0'}],
   ['libopenjpeg', ['openjpeg.h'], ['opj_version'], {'pkg': 'libopenjp2',
@@ -974,21 +999,22 @@ check_pkg_config = [
   ['librsvg', ['librsvg-2.0/librsvg/rsvg.h'], ['rsvg_handle_render_cairo'], {'pkg': 'librsvg-2.0'}],
   ['librtmp', ['librtmp/rtmp.h'], ['RTMP_Socket'], {}],
   ['librubberband', ['rubberband/rubberband-c.h'], ['rubberband_new'], {'pkg': 'rubberband', 'version': '>= 1.8.1'}],
-  ['spirv_compiler', ['shaderc/shaderc.h'], ['shaderc_compiler_initialize'], {'pkg': 'shaderc', 'version': '>= 2019.'}],
   ['libshine', ['shine/layer3.h'], ['shine_encode_buffer'], {'pkg': 'shine'}],
   ['libsmbclient', ['libsmbclient.h'], ['smbc_init'], {'pkg': 'smbclient'}],
   ['libssh', ['libssh/sftp.h'], ['sftp_init'], {}],
   ['libspeex', ['speex/speex.h'], ['speex_decoder_init'], {'pkg': 'speex'}],
   ['libsrt', ['srt/srt.h'], ['srt_socket'], {'pkg': 'srt', 'version': '>= 1.2.0'}],
   ['libsvtav1', ['EbSvtAv1Enc.h'], ['svt_av1_enc_init_handle'], {'pkg': 'SvtAv1Enc', 'version': '>= 0.9.0'}],
+  ['libsvtjpegxs', ['SvtJpegxsEnc.h'], ['svt_jpeg_xs_encoder_init'], {'pkg': 'SvtJpegxs', 'version': '>= 0.10.0'}],
   ['libtesseract', ['tesseract/capi.h'], ['TessBaseAPICreate'], {'pkg': 'tesseract'}],
   # FIXME: libtorch needs a C++ check
   # with the following libraries:  -ltorch -lc10 -ltorch_cpu -lpthread
   # ['libtorch', ['torch/torch.h'], ['torch::Tensor'], {}],
-  ['libtls', ['tls.h'], ['tls_configure'], {}],
+  ['libtls', ['tls.h'], ['tls_configure'], {'pkg': 'libtls'}],
   ['libv4l2', ['libv4l2.h'], ['v4l2_ioctl'], {}],
   ['libvidstab', ['vid.stab/libvidstab.h'], ['vsMotionDetectInit'], {'pkg': 'vidstab', 'version': '>= 0.98'}],
   ['libvmaf', ['libvmaf.h'], ['vmaf_init'], {'version': '>= 2.0.0'}],
+  ['libvo_amrwbenc', ['vo-amrwbenc/enc_if.h'], ['E_IF_init'], {'pkg': 'vo-amrwbenc'}],
   ['libvorbis', ['vorbis/codec.h'], ['vorbis_info_init'], {'pkg': 'vorbis'}],
   ['libvorbisenc', ['vorbis/vorbisenc.h'], ['vorbis_encode_init'], {'pkg': 'vorbisenc'}],
   ['libvpl', ['mfxvideo.h', 'mfxdispatcher.h'], ['MFXLoad'], {'pkg': 'vpl', 'version': '>= 2.6', 'c_args': ['-DMFX_DEPRECATED_OFF']}],
@@ -999,7 +1025,11 @@ check_pkg_config = [
   ['libxcb_shm', ['xcb/shm.h'], ['xcb_shm_attach'], {'pkg': 'xcb-shm'}],
   ['libxcb_shape', ['xcb/shape.h'], ['xcb_shape_get_rectangles'], {'pkg': 'xcb-shape'}],
   ['libxcb_xfixes', ['xcb/xfixes.h'], ['xcb_xfixes_get_cursor_image'], {'pkg': 'xcb-xfixes'}],
+  ['libxavs2', ['stdint.h', 'xavs2.h'], ['xavs2_api_get'], {'pkg': 'xavs2', 'version': '>= 1.3.0'}],
+  ['libxevd', ['xevd.h'], ['xevd_encode'], {'pkg': 'xeve', 'version': '>= 0.4.1'}],
+  ['libxevdb', ['xevd.h'], ['xevd_encode'], {'pkg': 'xevdb', 'version': '>= 0.4.1'}],
   ['libxeve', ['xeve.h'], ['xeve_encode'], {'pkg': 'xeve', 'version': '>= 0.5.1'}],
+  ['libxeveb', ['xeve.h'], ['xeve_encode'], {'pkg': 'xeve', 'version': '>= 0.5.1'}],
   ['libxml2', ['libxml2/libxml/xmlversion.h'], ['xmlCheckVersion'], {'pkg': 'libxml-2.0'}],
   ['libzimg', ['zimg.h'], ['zimg_get_api_version'], {'pkg': 'zimg', 'version': '>= 2.7.0'}],
   ['libzmq', ['zmq.h'], ['zmq_ctx_new'], {}],
@@ -1009,14 +1039,19 @@ check_pkg_config = [
   ['openal', ['AL/al.h'], ['alGetError'], {'pkg': 'openal', 'version': '>= 1.1'}],
   ['openssl', ['openssl/ssl.h'], ['DTLS_get_data_mtu'], {'pkg': 'openssl', 'version': '>= 3.0.0'}],
   ['pocketsphinx', ['pocketsphinx/pocketsphinx.h'], ['ps_init'], {}],
-  ['rkmpp', ['rockchip/rk_mpi.h'], ['mpp_create'], {'pkg': 'rockchip_mpp'}],
-  ['rockchip_mpp', ['rockchip/rk_mpi.h'], ['mpp_create'], {'version': '>= 1.3.7'}],
+  ['rkmpp', ['rockchip/rk_mpi.h', 'rockchip/mpp_buffer.h'], ['mpp_create', 'mpp_buffer_sync_begin_f'], {'pkg': 'rockchip_mpp', 'version': '>= 1.3.8'}],
   ['sndio', ['sndio.h'], ['sio_open'], {'pkg': 'sndio'}],
   ['vulkan', ['vulkan/vulkan.h'], ['vkCreateInstance'], {'pkg': 'vulkan', 'version': '>= 1.3.277'}],
   ['vulkan_static', ['vulkan/vulkan.h'], ['vkGetInstanceProcAddr'], {'pkg': 'vulkan', 'version': '>= 1.3.277'}],
   ['whisper', ['whisper.h'], ['whisper_init_from_file_with_params'], {'pkg': 'vulkan', 'version': '>= 1.7.5'}],
   ['zlib', ['zlib.h'], ['zlibVersion'], {'pkg': 'zlib'}],
 ]
+
+if get_option('libshaderc').allowed()
+  check_pkg_config += [
+    ['spirv_library', ['shaderc/shaderc.h'], ['shaderc_compiler_initialize'], {'pkg': 'shaderc', 'version': '>= 2019.1'}],
+  ]
+endif
 
 if get_option('xlib').allowed()
   check_pkg_config += [
@@ -1149,6 +1184,7 @@ check_components = [
     {'defines': ['VPX_IMG_FMT_HIGHBITDEPTH'], 'extra_deps': ['libm_extra_deps', 'thread_dep']}],
   ['libvpx_vp9_encoder', ['vpx/vpx_encoder.h', 'vpx/vp8cx.h'], ['vpx_codec_vp9_cx'], ['vpx'],
     {'defines': ['VPX_IMG_FMT_HIGHBITDEPTH'], 'extra_deps': ['libm_extra_deps', 'thread_dep']}],
+  ['libxavs', ['stdint.h', 'xavs.h'], ['xavs_encoder_encode'], ['xavs'], {'extra_deps': ['libm_extra_deps', 'thread_dep']}],
   ['libxvid', ['xvid.h'], ['xvid_global'], ['xvidcore']],
   ['linux_fb_h', ['linux/fb.h'], [], []],
   ['lzma', ['lzma.h'], ['lzma_version_number'], ['lzma']],
@@ -1343,6 +1379,10 @@ check_types = [
   ['DPI_AWARENESS_CONTEXT', ['windows.h'], {'c_args': ['-D_WIN32_WINNT=0x0A00']}],
   ['SecPkgContext_KeyingMaterialInfo', ['windows.h', 'security.h', 'schnlsp.h'], {'c_args': ['-DSECURITY_WIN32']}],
   ['DXVA2_ConfigPictureDecode', ['d3d9.h', 'dxva2api.h'], {'c_args': ['-D_WIN32_WINNT=0x0602']}],
+  ['__x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession3', ['windows.h', 'windows.graphics.capture.h'], {'c_args': ['-D_WIN32_WINNT=0x0A00', '-DWINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION=0x130000', '-DCOBJMACROS']}],
+  ['__x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession5', ['windows.h', 'windows.graphics.capture.h'], {'c_args': ['-D_WIN32_WINNT=0x0A00', '-DWINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION=0x130000', '-DCOBJMACROS']}],
+  ['IGraphicsCaptureItemInterop', ['windows.h', 'windows.graphics.capture.interop.h'], {'c_args': ['-D_WIN32_WINNT=0x0A00', '-DWINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION=0x130000', '-DCOBJMACROS']}],
+  ['IDirect3DDxgiInterfaceAccess', ['windows.h', 'windows.graphics.capture.interop.h'], {'c_args': ['-D_WIN32_WINNT=0x0A00', '-DWINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION=0x130000', '-DCOBJMACROS']}],
   ['VdpPictureInfoHEVC', ['vdpau/vdpau.h']],
   ['IBaseFilter', ['dshow.h']],
   ['clCreateImageFromFdINTEL_fn', ['CL/cl_intel.h'],
@@ -1485,6 +1525,7 @@ foreach check : check_headers
 endforeach
 
 external_library_list = library_gpl_list + library_nonfree_list + library_version3_list + library_gplv3_list + [
+  'cairo',
   'chromaprint',
   'gcrypt',
   'gnutls',
@@ -1520,6 +1561,7 @@ external_library_list = library_gpl_list + library_nonfree_list + library_versio
   'libmysofa',
   'liboapv',
   'libopencv',
+  'libopencolorio',
   'libopenh264',
   'libopenjpeg',
   'libopenmpt',
@@ -1543,9 +1585,11 @@ external_library_list = library_gpl_list + library_nonfree_list + library_versio
   'libsrt',
   'libssh',
   'libsvtav1',
+  'libsvtjpegxs',
   'libtensorflow',
   'libtesseract',
   'libtheora',
+  'libtls',
   # FIXME enable when C++ checks are implemented
   # 'libtorch',
   'libtwolame',
@@ -1557,7 +1601,9 @@ external_library_list = library_gpl_list + library_nonfree_list + library_versio
   'libvvenc',
   'libwebp',
   'libxevd',
+  'libxevdb',
   'libxeve',
+  'libxeveb',
   'libxml2',
   'libzimg',
   'libzmq',
@@ -1644,6 +1690,7 @@ feature_list = [
   'small',
   'static',
   'swscale_alpha',
+  'unstable',
 ]
 
 network_funcs = [
@@ -1670,11 +1717,16 @@ config_extra = [
   'cbs_h265',
   'cbs_h266',
   'cbs_jpeg',
+  'cbs_lcevc',
   'cbs_mpeg2',
   'cbs_vp8',
   'cbs_vp9',
   'celp_math',
+  'd3d12_intra_refresh',
+  'd3d12_motion_estimator',
+  'd3d12_video_process_reference_info',
   'd3d12va_encode',
+  'd3d12va_me_precision_eighth_pixel',
   'deflate_wrapper',
   'dirac_parse',
   'dnn',
@@ -1682,7 +1734,6 @@ config_extra = [
   'dovi_rpuenc',
   'dvprofile',
   'evcparse',
-  'exif',
   'faandct',
   'faanidct',
   'fdctdsp',
@@ -1761,7 +1812,6 @@ config_extra = [
   'vc1dsp',
   'videodsp',
   'vp3dsp',
-  'vp56dsp',
   'vp8dsp',
   'vulkan_encode',
   'vvc_sei',
@@ -1842,7 +1892,7 @@ config_list = (
     'neon_clobber_test',
     'ossfuzz',
     'pic',
-    'ptx_compression',
+    'shader_compression',
     'resource_compression',
     'thumb',
     'valgrind_backtrace',
@@ -2064,14 +2114,14 @@ conf.set('frame_thread_encoder', 1)
 conf.set('mcdeint_filter', 0)
 conf.set('uspp_filter', 0)
 
-# Unlike other feature flags or libraries, spirv_compiler is not defined
+# Unlike other feature flags or libraries, spirv_library is not defined
 # within any of our predefined categories of components.
 # It gets defined if either libshaderc or libglslang check succeeds.
 # As such, its in a state of neither being explicitly enabled, nor
 # explicitly disabled, but even in this state, being mentioned in
 # _deps results in it always passing.
 # Disable it explicitly to fix this.
-conf.set('spirv_compiler', 0)
+conf.set('spirv_library', 0)
 
 if host_system == 'windows'
   conf.set('symver', 0)
@@ -2434,6 +2484,7 @@ endforeach
 
 xcrun = disabler()
 bin2c = disabler()
+glslc = disabler()
 metalcc = disabler()
 metallib = disabler()
 
@@ -2563,6 +2614,14 @@ if conf.get('openssl') == 1 and conf.get('mbedtls') == 1
   error('OpenSSL and mbedTLS must not be enabled at the same time.')
 endif
 
+if conf.get('libxevd') == 1 and conf.get('libxevdb') == 1
+  error('libxevd and libxevdb must not be enabled at the same time.')
+endif
+
+if conf.get('libxeve') == 1 and conf.get('libxeveb') == 1
+  error('libxeve and libxeveb must not be enabled at the same time.')
+endif
+
 # Manual check for fontconfig
 conf.set10('fontconfig', conf.get('libfontconfig').is_odd())
 
@@ -2598,6 +2657,7 @@ if conf.get('schannel') == 1
 endif
 
 # Manual check for vulkan_1_4
+glslcflags = []
 if conf.get('vulkan') == 1
   if cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined VK_VERSION_1_4'), dependencies: extra_deps, name: 'Has Vulkan 1.4 define')
     conf.set10('vulkan_1_4', true)
@@ -2606,6 +2666,62 @@ if conf.get('vulkan') == 1
   else
     conf.set10('vulkan_1_4', false)
   endif
+
+  programs = ['glslc', 'glslang', 'glslangValidator']
+
+  foreach program : programs
+    glslc_exe = find_program(program, required: false)
+    if glslc_exe.found() and program.startswith('glslang')
+      glslcflags = [
+        '-V',
+        '--target-env',
+        'spirv1.6',
+        '--glsl-version',
+        '460',
+        '--depfile',
+        '@DEPFILE@'
+      ]
+      if conf.get('small', 0) == 1
+        glslcflags = ['-Os']
+      elif conf.get('optimizations', 0) == 1
+        glslcflags = []
+      else
+        glslcflags = ['-Od']
+      endif
+      if get_option('optimization') == '0'
+        glslcflags += ['-gVS']
+      endif
+      break
+    elif glslc_exe.found() and program == 'glslc'
+      glslcflags = [
+        '--target-env=vulkan1.4',
+        '--target-spv=spv1.6',
+        '-std=460',
+        '-MD',
+        '-MF',
+        '@DEPFILE@',
+        '-MT'
+      ]
+      if conf.get('small', 0) == 1
+        glslcflags += ['-Os']
+      elif conf.get('optimizations', 0) == 1
+        glslcflags += ['-O']
+      else
+        glslcflags += ['-O0']
+      endif
+      if get_option('optimization') == '0'
+        glslcflags += ['-g']
+      endif
+      break
+    else
+      conf.set10('spirv_compiler', false)
+    endif
+  endforeach
+else
+  conf.set10('libglslang', false)
+  conf.set10('libshaderc', false)
+  conf.set10('spirv_library', false)
+  conf.set10('spirv_compiler', false)
 endif
 
 # Manual check for avisynth
@@ -2720,15 +2836,15 @@ if conf.get('zlib') == 1
   conf.set10('gzip', gzip_exe.found())
 
   if not gzip_exe.found()
-    conf.set10('ptx_compression', false)
+    conf.set10('shader_compression', false)
     conf.set10('resource_compression', false)
   endif
 else
-  conf.set10('ptx_compression', false)
+  conf.set10('shader_compression', false)
   conf.set10('resource_compression', false)
 endif
 
-if conf.get('ptx_compression', 0) == 1 or conf.get('resource_compression', 0) == 1
+if conf.get('shader_compression', 0) == 1 or conf.get('resource_compression', 0) == 1
   gzip_gen = generator(
     gzip_exe,
     arguments: ['-nc9', '@INPUT@'],
@@ -2749,6 +2865,19 @@ conf.set10('ioctl_posix', cc.compiles('''
   #include <sys/ioctl.h>
   int main() { int ioctl(int, int, ...); return 0; }
 ''', name: 'Supports ioctl(3P)'))
+
+if conf.get('mediacodec', 0) == 1
+  if conf.get('jni', 0) == 0
+    error('mediacodec requires -Djni=<auto or enabled>')
+  endif
+  compat_objs += files('compat/android/binder.c')
+endif
+
+if conf.get('rkmpp', 0) == 1
+  if not get_option('libdrm').allowed()
+    error('rkmpp requires -Dlibdrm=<auto or enabled>')
+  endif
+endif
 
 if get_option('vapoursynth').allowed()
   conf.set10('vapoursynth', cc.has_header('vapoursynth/VSScript4.h') and cc.has_header('vapoursynth/VapourSynth4.h'))
@@ -2955,10 +3084,14 @@ elif conf.get('aarch64') == 1
     ['ext   v0.8B, v0.8B, v1.8B, #1', 'neon'],
   ]
   asm_arch_ext_checks += [
-    ['udot v0.4s, v0.16b, v0.16b', 'dotprod'],
-    ['usdot v0.4s, v0.16b, v0.16b', 'i8mm'],
-    ['whilelt p0.s, x0, x1', 'sve'],
-    ['sqrdmulh z0.s, z0.s, z0.s', 'sve2'],
+    ['arm_crc', 'crc', 'crc32x w0, w0, x0'],
+    ['dotprod', 'dotprod', 'udot v0.4s, v0.16b, v0.16b'],
+    ['i8mm', 'i8mm', 'usdot v0.4s, v0.16b, v0.16b'],
+    ['sve', 'sve', 'whilelt p0.s, x0, x1'],
+    ['sve2', 'sve2', 'sqrdmulh z0.s, z0.s, z0.s'],
+    ['sme', 'sme', 'smstart \n\t cntb x0'],
+    ['sme_i16i64', 'sme-i16i64', 'smstart \n\t smopa za0.d, p0/m, p0/m, z0.h, z1.h'],
+    ['sme2', 'sme2', 'smstart \n\t sdot za.s[w10, 0], {z0.b-z3.b}, {z4.b-z7.b}'],
   ]
   asm_as_checks += [
     ['.arch armv8-a', 'as_arch_directive'],
@@ -3067,10 +3200,13 @@ endforeach
 asm_archext_list = []
 foreach check : asm_arch_ext_checks
   asm_inline_checks += [
-    ['"@0@"'.format(check[0]), '@0@_inline'.format(check[1])]
+    ['"@0@"'.format(check[2]), '@0@_inline'.format(check[0])]
   ]
-  # Separate list of extensions that are handled via .arch_extension
-  asm_archext_list += check[1]
+  # Disable the main feature (e.g. HAVE_NEON) if neither inline nor external
+  # assembly support the feature out of the box. Skip this for the features
+  # checked with check_archext_insn above, as that function takes care of
+  # updating all the variables as necessary.
+  asm_archext_list += check[0]
 endforeach
 
 foreach check: asm_inline_checks
@@ -3121,7 +3257,7 @@ foreach check : asm_as_checks
   ))
 endforeach
 
-as_arch_str = ''
+arch_directive = ''
 as_arch_level = ''
 if conf.get('as_arch_directive', 0) == 1 and conf.get('aarch64', 0) == 1
   as_arch_level = 'armv8-a'
@@ -3149,53 +3285,53 @@ if conf.get('as_arch_directive', 0) == 1 and conf.get('aarch64', 0) == 1
   # also had a bug (https://github.com/llvm/llvm-project/issues/32220)
   # causing a plain ".arch <level>" to not have any effect unless it
   # had an extra "+<feature>" included - but it was activated on the next
-  # ".arch_extension" directive. Check if we can include "+crc" as dummy
+  # ".arch_extension" directive. Check if we can include "+fp" as dummy
   # feature to make the .arch directive behave as expected and take
   # effect right away.
   f = configure_file(
-    command: [python3, '-c', 'import sys; print(sys.argv[1])', '.arch @0@+crc'.format(as_arch_level)],
-    output: '@0@.S'.format('arch_crc'),
+    command: [python3, '-c', 'import sys; print(sys.argv[1])', '.arch @0@+fp'.format(as_arch_level)],
+    output: 'arch_fp.S',
     capture: true,
   )
   if cc.compiles(
     f,
-    name: 'assembler supports @0@ with the CRC extension'.format(as_arch_level)
+    name: 'assembler supports @0@ with the FP extension'.format(as_arch_level)
   )
     as_arch_level = as_arch_level + '+crc'
   endif
-  as_arch_str = '.arch ' + as_arch_level + '\n'
+  arch_directive = '.arch ' + as_arch_level + '\n'
 endif
 
 foreach check : asm_arch_ext_checks
-  code = as_arch_str
-  arch_ext_str = '.arch_extension ' + check[1] + '\n'
-  code += arch_ext_str
+  # Test if the assembler supports the .arch_extension $archext directive.
+  code = arch_directive
+  arch_extension_directive = '.arch_extension ' + check[1] + '\n'
+  code += arch_extension_directive
   f = configure_file(
     command: [python3, '-c', 'import sys; print(sys.argv[1])', '@0@'.format(code)],
-    output: '@0@_archext.S'.format(check[1]),
+    output: '@0@_archext.S'.format(check[0]),
     capture: true,
   )
   archext_supported = cc.compiles(
     f,
-    name: 'arch_extension_' + check[1]
+    name: 'arch_extension_' + check[0]
   )
-  conf.set10('as_archext_' + check[1] + '_directive', archext_supported)
+  archextdir = check[1].replace('-', '_')
+  conf.set10('as_archext_' + archextdir + '_directive', archext_supported)
 
-  code = as_arch_str
+  # Test if we can assemble the instruction after potential .arch and
+  # .arch_extension directives.
+  code = arch_directive
   if archext_supported
-    code += arch_ext_str
+    code += arch_extension_directive
   endif
-  code += check[0] + '\n'
+  code += check[2] + '\n'
   f = configure_file(
     command: [python3, '-c', 'import sys; print(sys.argv[1])', '@0@'.format(code)],
-    output: '@0@.S'.format(check[1]),
+    output: '@0@.S'.format(check[0]),
     capture: true,
   )
-  conf.set10(check[1] + '_external', false)
-  conf.set10(check[1], cc.compiles(
-    f,
-    name: check[1]
-  ))
+  conf.set10(check[0], cc.compiles(f, name: check[0]))
 endforeach
 
 if conf.get('x86') == 1
@@ -3228,7 +3364,7 @@ extern_things = [
   ['FFInputFormat', 'demuxer', 'libavformat/allformats.c', 'demuxer_list'],
   ['FFCodec', 'encoder', 'libavcodec/allcodecs.c', 'encoder_list'],
   ['FFCodec', 'decoder', 'libavcodec/allcodecs.c', 'decoder_list'],
-  ['AVCodecParser', 'parser', 'libavcodec/parsers.c', 'parser_list'],
+  ['FFCodecParser', 'parser', 'libavcodec/parsers.c', 'parser_list'],
   ['FFBitStreamFilter', 'bsf', 'libavcodec/bitstream_filters.c', 'bsf_list'],
   ['FFHWAccel', 'hwaccel', 'libavcodec/hwaccels.h', 'hwaccel_list'],
   ['URLProtocol', 'protocol', 'libavformat/protocols.c', 'protocol_list'],
@@ -3262,7 +3398,7 @@ foreach extern_thing : extern_things
 
   foreach elem : list
     if elem == ''
-      message('@0@s @1@'.format(thing_suffix, list))
+      warning('@0@s @1@'.format(thing_suffix, list))
     endif
     opt = get_option(elem)
     conf.set(elem, (opt.enabled() or (opt.allowed() and thing_allowed)).to_int())
@@ -3402,13 +3538,13 @@ subdir('fftools')
 
 things_to_print = [
   ['libavcodec/codec_list.c', 'FFCodec', 'codec_list', encoder_list + decoder_list],
-  ['libavcodec/parser_list.c', 'AVCodecParser', 'parser_list', parser_list],
+  ['libavcodec/parser_list.c', 'FFCodecParser', 'parser_list', parser_list],
   ['libavcodec/bsf_list.c', 'FFBitStreamFilter', 'bitstream_filters', bsf_list],
   ['libavformat/muxer_list.c', 'FFOutputFormat', 'muxer_list', muxer_list],
-  ['libavformat/demuxer_list.c', 'AVInputFormat', 'demuxer_list', demuxer_list],
+  ['libavformat/demuxer_list.c', 'FFInputFormat', 'demuxer_list', demuxer_list],
   ['libavformat/protocol_list.c', 'URLProtocol', 'url_protocols', protocol_list],
   ['libavdevice/outdev_list.c', 'FFOutputFormat', 'outdev_list', outdev_list],
-  ['libavdevice/indev_list.c', 'AVInputFormat', 'indev_list', indev_list],
+  ['libavdevice/indev_list.c', 'FFInputFormat', 'indev_list', indev_list],
   ['libavfilter/filter_list.c', 'FFFilter', 'filter_list', filter_list],
 ]
 
@@ -3463,6 +3599,12 @@ int main() { return 0; }
   common_incs += [include_directories('compat/stdbit')]
 endif
 
+if conf.get('memalign', 0) == 0 and conf.get('posix_memalign', 0) == 0 and conf.get('aligned_malloc', 0) == 0
+  if conf.get('asm', 0) == 1 or conf.get('inline_asm', 0) == 1
+    error('Building with assembly enabled is not supported on platforms without aligned memory allocations! Try reconfiguring with -Dasm=disabled')
+  endif
+endif
+
 foreach lib: autodetect_libs
   if conf_requested.get(lib, 0) == 1 and conf.get(lib, 0) == 0
     error('@0@ requested but not found').format(lib)
@@ -3471,6 +3613,7 @@ endforeach
 
 # Readd the suppressed arguments from feature detection
 project_c_args += cc.get_supported_arguments(
+  '-Qunused-arguments',
   '-Werror=format-security',
   '-Werror=implicit-function-declaration',
   '-Werror=missing-prototypes',
@@ -3548,7 +3691,7 @@ final_conf = configuration_data()
 
 ffmpeg_configuration = meson.build_options().strip()
 final_conf.set_quoted('FFMPEG_CONFIGURATION', ffmpeg_configuration.replace('\\', '\\\\'))
-final_conf.set('CONFIG_THIS_YEAR', 2022)
+final_conf.set('CONFIG_THIS_YEAR', 2026)
 final_conf.set_quoted('FFMPEG_DATADIR', join_paths(get_option('prefix'), get_option('datadir')))
 final_conf.set_quoted('AVCONV_DATADIR', join_paths(get_option('prefix'), get_option('datadir')))
 final_conf.set_quoted('CC_IDENT', '@0@ @1@'.format(cc.get_id(), cc.version()))
@@ -3580,6 +3723,11 @@ if not get_option('version3').disabled()
   else
     conf.set('lgplv3', 1)
   endif
+endif
+
+if get_option('gpl').allowed()
+  # Files that are marked as LGPL but some developers prefer only building them with --enable-gpl
+  conf.set('lgpl_gpl', 1)
 endif
 
 conf.set('mmx2', conf.get('mmxext'))
@@ -3658,6 +3806,14 @@ config_components_h = configure_file(
   configuration: components_conf,
 )
 
+if conf.get('x86asm', 0) == 1
+  config_components_asm = configure_file(
+    output: 'config_components.asm',
+    output_format: 'nasm',
+    configuration: components_conf,
+  )
+endif
+
 build_tests = get_option('tests').allowed() and meson.can_run_host_binaries()
 
 fs = import('fs')
@@ -3665,7 +3821,7 @@ fs = import('fs')
 foreach built_lib : built_libs
   sources = get_variable('lib@0@_sources'.format(built_lib[0])) + [ffversion_h]
   x86asm_sources = []
-  cuda_sources = []
+  shader_sources = []
   tests = get_variable('lib@0@_tests'.format(built_lib[0]), [])
   gen_objects = []
   optional_deps = get_variable('lib@0@_optional_deps'.format(built_lib[0]), [])
@@ -3780,7 +3936,14 @@ foreach built_lib : built_libs
     optional_sources = get_variable('lib@0@_cuda_optional_sources'.format(built_lib[0]), {})
     foreach comp_name, comp_sources : optional_sources
       if conf.get(comp_name, 0) == 1
-        cuda_sources += comp_sources
+        shader_sources += comp_sources
+      endif
+    endforeach
+  elif conf.get('spirv_compiler', 0) == 1
+    optional_sources = get_variable('lib@0@_vulkan_optional_sources'.format(built_lib[0]), {})
+    foreach comp_name, comp_sources : optional_sources
+      if conf.get(comp_name, 0) == 1
+        shader_sources += comp_sources
       endif
     endforeach
   endif
@@ -3807,17 +3970,29 @@ foreach built_lib : built_libs
 
   version = get_variable('lib@0@_majorver'.format(built_lib[0]))
 
-  if cuda_sources.length() > 0
-    asm_gen = generator(nvcc_default,
-      output : '@BASENAME@.ptx',
-      arguments : [
-        nvccflags,
-        '-o', '@OUTPUT@',
-        '@INPUT@',
-      ]
-    )
-    cuda_objects = asm_gen.process(cuda_sources)
-    if conf.get('ptx_compression') == 1
+  if shader_sources.length() > 0
+    if conf.get('cuda_nvcc', 0) == 1 or conf.get('cuda_llvm') == 1
+      asm_gen = generator(nvcc_default,
+        output : '@BASENAME@.ptx',
+        arguments : [
+          nvccflags,
+          '-o', '@OUTPUT@',
+          '@INPUT@',
+        ]
+      )
+    elif conf.get('spirv_compiler', 0) == 1
+      asm_gen = generator(glslc_exe,
+        output: '@BASENAME@.spv',
+        arguments: [
+          glslcflags,
+          '-o', '@OUTPUT@',
+          '@INPUT@',
+        ],
+        depfile: '@BASENAME@.d'
+      )
+    endif
+    cuda_objects = asm_gen.process(shader_sources)
+    if conf.get('shader_compression') == 1
       gz_objs = gzip_gen.process(cuda_objects)
       gen_objects = bin2c.process(gz_objs)
     else
@@ -4085,11 +4260,10 @@ if conf.get('x86') == 1
     'standalone assembly': conf.get('x86asm').is_odd(),
     'MMX': conf.get('mmx').is_odd(),
     'MMXEXT': conf.get('mmxext').is_odd(),
-    '3DNow!': conf.get('amd3dnow').is_odd(),
-    '3DNow! extended': conf.get('amd3dnowext').is_odd(),
     'SSE': conf.get('sse').is_odd(),
     'SSSE3': conf.get('ssse3').is_odd(),
     'AESNI': conf.get('aesni').is_odd(),
+    'CLMUL': conf.get('clmul').is_odd(),
     'AVX': conf.get('avx').is_odd(),
     'AVX2': conf.get('avx2').is_odd(),
     'AVX-512': conf.get('avx512').is_odd(),
@@ -4106,10 +4280,14 @@ endif
 if conf.get('aarch64') == 1
   summary({
     'NEON': conf.get('neon').is_odd(),
+    'CRC': conf.get('arm_crc').is_odd(),
     'DOTPROD': conf.get('dotprod').is_odd(),
     'I8MM': conf.get('i8mm').is_odd(),
     'SVE': conf.get('sve').is_odd(),
     'SVE2': conf.get('sve2').is_odd(),
+    'SME': conf.get('sme').is_odd(),
+    'SME-I16I64': conf.get('sme_i16i64').is_odd(),
+    'SME2': conf.get('sme2').is_odd(),
   }, section: 'Arm64', bool_yn: true)
 endif
 if conf.get('arm') == 1

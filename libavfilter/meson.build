@@ -89,6 +89,7 @@ libavfilter_optional_sources = {
   'alphamerge_filter' : files('vf_alphamerge.c','framesync.c'),
   'amerge_filter' : files('af_amerge.c'),
   'ametadata_filter' : files('f_metadata.c'),
+  'amf_capture_filter' : files('vsrc_amf.c'),
   'amix_filter' : files('af_amix.c'),
   'amovie_filter' : files('src_movie.c'),
   'amplify_filter' : files('vf_amplify.c'),
@@ -235,6 +236,7 @@ libavfilter_optional_sources = {
   'deesser_filter' : files('af_deesser.c'),
   'deflate_filter' : files('vf_neighbor.c'),
   'deflicker_filter' : files('vf_deflicker.c'),
+  'deinterlace_d3d12_filter' : files('vf_deinterlace_d3d12.c'),
   'deinterlace_qsv_filter' : files('vf_vpp_qsv.c'),
   'deinterlace_vaapi_filter' : files('vf_deinterlace_vaapi.c','vaapi_vpp.c'),
   'dejudder_filter' : files('vf_dejudder.c'),
@@ -259,6 +261,7 @@ libavfilter_optional_sources = {
   'drawgraph_filter' : files('f_drawgraph.c'),
   'drawgrid_filter' : files('vf_drawbox.c'),
   'drawtext_filter' : files('vf_drawtext.c','textutils.c'),
+  'drawvg_filter' : files('vf_drawvg.c','textutils.c'),
   'drmeter_filter' : files('af_drmeter.c'),
   'dynaudnorm_filter' : files('af_dynaudnorm.c'),
   'earwax_filter' : files('af_earwax.c'),
@@ -298,11 +301,12 @@ libavfilter_optional_sources = {
   'freezeframes_filter' : files('vf_freezeframes.c'),
   'frei0r_filter' : files('vf_frei0r.c'),
   'frei0r_src_filter' : files('vf_frei0r.c'),
-  'fspp_filter' : files('vf_fspp.c','qp_table.c'),
+  'fspp_filter' : files('vf_fspp.c','vf_fsppdsp.c','qp_table.c'),
   'fsync_filter' : files('vf_fsync.c'),
   'gblur_filter' : files('vf_gblur.c'),
   'gblur_vulkan_filter' : files('vf_gblur_vulkan.c','vulkan.c','vulkan_filter.c'),
   'geq_filter' : files('vf_geq.c'),
+  'gfxcapture_filter' : files('vsrc_gfxcapture.c','vsrc_gfxcapture_winrt.cpp'),
   'gradfun_filter' : files('vf_gradfun.c'),
   'gradients_filter' : files('vsrc_gradients.c'),
   'graphmonitor_filter' : files('f_graphmonitor.c'),
@@ -338,7 +342,7 @@ libavfilter_optional_sources = {
   'iccdetect_filter' : files('vf_iccdetect.c','fflcms2.c'),
   'iccgen_filter' : files('vf_iccgen.c','fflcms2.c'),
   'identity_filter' : files('vf_identity.c','framesync.c'),
-  'idet_filter' : files('vf_idet.c'),
+  'idet_filter' : files('vf_idet.c','vf_idetdsp.c'),
   'il_filter' : files('vf_il.c'),
   'inflate_filter' : files('vf_neighbor.c'),
   'interlace_filter' : files('vf_tinterlace.c'),
@@ -385,6 +389,7 @@ libavfilter_optional_sources = {
   'mcompand_filter' : files('af_mcompand.c'),
   'median_filter' : files('vf_median.c'),
   'mergeplanes_filter' : files('vf_mergeplanes.c','framesync.c'),
+  'mestimate_d3d12_filter' : files('vf_mestimate_d3d12.c'),
   'mestimate_filter' : files('vf_mestimate.c','motion_estimation.c'),
   'metadata_filter' : files('f_metadata.c'),
   'midequalizer_filter' : files('vf_midequalizer.c','framesync.c'),
@@ -408,6 +413,7 @@ libavfilter_optional_sources = {
   'nullsink_filter' : files('vsink_nullsink.c'),
   'nullsrc_filter' : files('vsrc_testsrc.c'),
   'null_filter' : files('vf_null.c'),
+  'ocio_filter' : files('vf_opencolorio.c','ocio_wrapper.cpp'),
   'ocr_filter' : files('vf_ocr.c'),
   'ocv_filter' : files('vf_libopencv.c'),
   'openclsrc_filter' : files('vf_program_opencl.c','opencl.c'),
@@ -437,6 +443,7 @@ libavfilter_optional_sources = {
   'pixelize_filter' : files('vf_pixelize.c'),
   'pixscope_filter' : files('vf_datascope.c'),
   'pp7_filter' : files('vf_pp7.c','qp_table.c'),
+  'premultiply_dynamic_filter' : files('vf_premultiply.c','framesync.c'),
   'premultiply_filter' : files('vf_premultiply.c','framesync.c'),
   'prewitt_filter' : files('vf_convolution.c'),
   'prewitt_opencl_filter' : files('vf_convolution_opencl.c','opencl.c','opencl/convolution.cl'),
@@ -472,6 +479,7 @@ libavfilter_optional_sources = {
   'scale2ref_npp_filter' : files('vf_scale_npp.c','scale_eval.c'),
   'scale_cuda_filter' : files('vf_scale_cuda.c','scale_eval.c','cuda/load_helper.c'),
   'scale_d3d11_filter' : files('vf_scale_d3d11.c','scale_eval.c'),
+  'scale_d3d12_filter' : files('vf_scale_d3d12.c','scale_eval.c'),
   'scale_filter' : files('vf_scale.c','scale_eval.c','framesync.c'),
   'scale_npp_filter' : files('vf_scale_npp.c','scale_eval.c'),
   'scale_qsv_filter' : files('vf_vpp_qsv.c'),
@@ -652,12 +660,19 @@ libavfilter_tests = [
   # MANUAL ['integral', files('tests/integral.c')],
 ]
 
-languages_map += {
-  'coreimage_filter': ['objc'],
-  'yadif_videotoolbox_filter': ['objc'],
-  'coreimagesrc_filter': ['objc'],
+libavfilter_optional_tests = {
+  'drawvg_filter' : [
+    ['drawvg', files('tests/drawvg.c')],
+  ],
 }
 
+languages_map += {
+  'coreimage_filter': ['objc'],
+  'ocio_filter': ['cpp'],
+  'yadif_videotoolbox_filter': ['objc'],
+  'coreimagesrc_filter': ['objc'],
+  'gfxcapture_filter': ['cpp'],
+}
 #### --- END GENERATED --- ####
 
 subdir('dnn')

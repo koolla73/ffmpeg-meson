@@ -1,11 +1,7 @@
 #### --- GENERATED --- ####
 
-libavcodec_x86_vvc_optional_sources = {
-  'vvc_decoder' : files('dsp_init.c'), # MANUAL
-}
-
 libavcodec_x86_vvc_x86asm_optional_sources = {
-  'vvc_decoder' : [], # MANUAL
+  'vvc_decoder' : files('dsp_init.c'), # MANUAL
 }
 
 #### --- END GENERATED --- ####

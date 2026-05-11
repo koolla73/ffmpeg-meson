@@ -11,6 +11,7 @@ libswscale_aarch64_neon_sources = files(
   'range_convert_neon.S',
   'rgb2rgb_neon.S',
   'swscale_unscaled_neon.S',
+  'xyz2rgb_neon.S',
   'yuv2rgb_neon.S',
 )
 

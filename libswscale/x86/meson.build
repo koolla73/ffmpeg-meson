@@ -5,6 +5,7 @@ libswscale_x86_sources = files(
 )
 
 libswscale_x86_optional_sources = {
+  'mmxext_inline' : files('hscale_fast_bilinear_simd.c'),
   'xmm_clobber_test' : files('w64xmmtest.c'),
 }
 
@@ -19,7 +20,6 @@ libswscale_x86_x86asm_sources = files(
   'yuv2yuvX.asm',
 )
 
-libswscale_x86_mmx_sources = files(
-  'hscale_fast_bilinear_simd.c',
-)
-
+libswscale_x86_x86asm_optional_sources = {
+  'unstable' : files('ops_int.asm','ops_float.asm','ops.c'),
+}

@@ -30,7 +30,6 @@ libavcodec_arm_optional_sources = {
   'videodsp' : files('videodsp_init_arm.c'),
   'vorbis_decoder' : files('vorbisdsp_init_arm.c'),
   'vp3dsp' : files('vp3dsp_init_arm.c'),
-  'vp6_decoder' : files('vp6dsp_init_arm.c'),
   'vp8dsp' : files('vp8dsp_init_arm.c'),
   'vp9_decoder' : files('vp9dsp_init_10bpp_arm.c','vp9dsp_init_12bpp_arm.c','vp9dsp_init_arm.c'),
 }
@@ -82,7 +81,6 @@ libavcodec_arm_neon_optional_sources = {
   'vc1dsp' : files('vc1dsp_init_neon.c','vc1dsp_neon.S'),
   'vorbis_decoder' : files('vorbisdsp_neon.S'),
   'vp3dsp' : files('vp3dsp_neon.S'),
-  'vp6_decoder' : files('vp6dsp_neon.S'),
   'vp8dsp' : files('vp8dsp_init_neon.c','vp8dsp_neon.S'),
   'vp9_decoder' : files('vp9itxfm_16bpp_neon.S','vp9itxfm_neon.S','vp9lpf_16bpp_neon.S','vp9lpf_neon.S','vp9mc_16bpp_neon.S','vp9mc_neon.S'),
 }
