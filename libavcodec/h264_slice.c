@@ -1150,7 +1150,7 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
         if (flush_changes)
             ff_h264_flush_change(h);
 
-        if ((ret = get_pixel_format(h, 1)) < 0)
+        if ((ret = get_pixel_format(h, must_reinit || needs_reinit)) < 0)
             return ret;
         h->avctx->pix_fmt = ret;
 
@@ -1949,7 +1949,8 @@ static int h264_slice_init(H264Context *h, H264SliceContext *sl,
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B && !sl->direct_spatial_mv_pred)
         ff_h264_direct_dist_scale_factor(h, sl);
-    ff_h264_direct_ref_list_init(h, sl);
+    if (!h->setup_finished)
+        ff_h264_direct_ref_list_init(h, sl);
 
     if (h->avctx->skip_loop_filter >= AVDISCARD_ALL ||
         (h->avctx->skip_loop_filter >= AVDISCARD_NONKEY &&
@@ -2644,10 +2645,10 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 goto finish;
             }
             if (sl->cabac.bytestream > sl->cabac.bytestream_end + 2 )
-                av_log(h->avctx, AV_LOG_DEBUG, "bytestream overread %"PTRDIFF_SPECIFIER"\n", sl->cabac.bytestream_end - sl->cabac.bytestream);
+                av_log(h->avctx, AV_LOG_DEBUG, "bytestream overread %td\n", sl->cabac.bytestream_end - sl->cabac.bytestream);
             if (ret < 0 || sl->cabac.bytestream > sl->cabac.bytestream_end + 4) {
                 av_log(h->avctx, AV_LOG_ERROR,
-                       "error while decoding MB %d %d, bytestream %"PTRDIFF_SPECIFIER"\n",
+                       "error while decoding MB %d %d, bytestream %td\n",
                        sl->mb_x, sl->mb_y,
                        sl->cabac.bytestream_end - sl->cabac.bytestream);
                 er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,

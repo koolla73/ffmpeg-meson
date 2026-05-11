@@ -51,8 +51,6 @@ typedef struct RASCContext {
     GetByteContext  gb;
     uint8_t        *delta;
     int             delta_size;
-    uint8_t        *mv_scratch;
-    unsigned int    mv_scratch_size;
     uint8_t        *cursor;
     int             cursor_size;
     unsigned        cursor_w;
@@ -296,8 +294,10 @@ static int decode_move(AVCodecContext *avctx,
                 b2 -= s->frame2->linesize[0];
             }
         } else if (type == 0) {
-            av_fast_padded_malloc(&s->mv_scratch, &s->mv_scratch_size, w * h * s->bpp);
-            uint8_t *buffer = s->mv_scratch;
+            uint8_t *buffer;
+
+            av_fast_padded_malloc(&s->delta, &s->delta_size, w * h * s->bpp);
+            buffer = s->delta;
             if (!buffer)
                 return AVERROR(ENOMEM);
 
@@ -772,8 +772,6 @@ static av_cold int decode_close(AVCodecContext *avctx)
     s->cursor_size = 0;
     av_freep(&s->delta);
     s->delta_size = 0;
-    av_freep(&s->mv_scratch);
-    s->mv_scratch_size = 0;
     av_frame_free(&s->frame1);
     av_frame_free(&s->frame2);
     ff_inflate_end(&s->zstream);

@@ -22,7 +22,6 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio.h"
-#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -132,9 +131,9 @@ static int rsd_read_header(AVFormatContext *s)
             return ret;
 
         for (i = 0; i < par->ch_layout.nb_channels; i++) {
-            ret = ffio_read_size(s->pb, st->codecpar->extradata + 32 * i, 32);
-            if (ret < 0)
-                return ret;
+            if (avio_feof(pb))
+                return AVERROR_EOF;
+            avio_read(s->pb, st->codecpar->extradata + 32 * i, 32);
             avio_skip(s->pb, 8);
         }
         break;

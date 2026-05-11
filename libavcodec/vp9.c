@@ -41,6 +41,7 @@
 #include "vp9data.h"
 #include "vp9dec.h"
 #include "vpx_rac.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -254,10 +255,8 @@ static int update_size(AVCodecContext *avctx, int w, int h)
         *fmtp = AV_PIX_FMT_NONE;
 
         ret = ff_get_format(avctx, pix_fmts);
-        if (ret < 0) {
-            ff_set_dimensions(avctx, s->w, s->h);
+        if (ret < 0)
             return ret;
-        }
 
         avctx->pix_fmt = ret;
         s->gf_fmt  = s->pix_fmt;
@@ -1608,10 +1607,12 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     s->frame_header = &rf->header;
 
     if ((ret = decode_frame_header(avctx, data, size, &ref)) < 0) {
+        ff_cbs_fragment_reset(&s->current_frag);
         return ret;
     } else if (ret == 0) {
         if (!s->s.refs[ref].f) {
             av_log(avctx, AV_LOG_ERROR, "Requested reference %d not available\n", ref);
+            ff_cbs_fragment_reset(&s->current_frag);
             return AVERROR_INVALIDDATA;
         }
         for (int i = 0; i < 8; i++)
@@ -1824,12 +1825,11 @@ finish:
 
     return pkt->size;
 fail:
-    ff_cbs_fragment_reset(&s->current_frag);
     ff_progress_frame_report(&s->s.frames[CUR_FRAME].tf, INT_MAX);
     return ret;
 }
 
-static void vp9_decode_flush(AVCodecContext *avctx)
+static av_cold void vp9_decode_flush(AVCodecContext *avctx)
 {
     VP9Context *s = avctx->priv_data;
     int i;

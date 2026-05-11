@@ -36,7 +36,6 @@
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
-#include "avio_internal.h"
 #include "riff.h"
 
 #define MLV_VERSION "v2.0"
@@ -75,15 +74,12 @@ static int check_file_header(AVIOContext *pb, uint64_t guid)
 {
     unsigned int size;
     uint8_t version[8];
-    int ret;
 
     avio_skip(pb, 4);
     size = avio_rl32(pb);
     if (size < 52)
         return AVERROR_INVALIDDATA;
-    ret = ffio_read_size(pb, version, 8);
-    if (ret < 0)
-        return ret;
+    avio_read(pb, version, 8);
     if (memcmp(version, MLV_VERSION, 5) || avio_rl64(pb) != guid)
         return AVERROR_INVALIDDATA;
     avio_skip(pb, size - 24);
@@ -433,7 +429,7 @@ static int read_header(AVFormatContext *avctx)
 static void write_tiff_short(PutByteContext *pb, int tag, int value)
 {
     bytestream2_put_le16(pb, tag);
-    bytestream2_put_le16(pb, TIFF_SHORT);
+    bytestream2_put_le16(pb, AV_TIFF_SHORT);
     bytestream2_put_le32(pb, 1);
     bytestream2_put_le16(pb, value);
     bytestream2_put_le16(pb, 0);
@@ -442,7 +438,7 @@ static void write_tiff_short(PutByteContext *pb, int tag, int value)
 static void write_tiff_short2(PutByteContext *pb, int tag, int v1, int v2)
 {
     bytestream2_put_le16(pb, tag);
-    bytestream2_put_le16(pb, TIFF_SHORT);
+    bytestream2_put_le16(pb, AV_TIFF_SHORT);
     bytestream2_put_le32(pb, 2);
     bytestream2_put_le16(pb, v1);
     bytestream2_put_le16(pb, v2);
@@ -451,7 +447,7 @@ static void write_tiff_short2(PutByteContext *pb, int tag, int v1, int v2)
 static void write_tiff_long(PutByteContext *pb, int tag, int value)
 {
     bytestream2_put_le16(pb, tag);
-    bytestream2_put_le16(pb, TIFF_LONG);
+    bytestream2_put_le16(pb, AV_TIFF_LONG);
     bytestream2_put_le32(pb, 1);
     bytestream2_put_le32(pb, value);
 }
@@ -459,7 +455,7 @@ static void write_tiff_long(PutByteContext *pb, int tag, int value)
 static void write_tiff_byte4(PutByteContext *pb, int tag, int v1, int v2, int v3, int v4)
 {
     bytestream2_put_le16(pb, tag);
-    bytestream2_put_le16(pb, TIFF_BYTE);
+    bytestream2_put_le16(pb, AV_TIFF_BYTE);
     bytestream2_put_le32(pb, 4);
     bytestream2_put_byte(pb, v1);
     bytestream2_put_byte(pb, v2);
@@ -510,7 +506,7 @@ static int get_packet_lj92(AVFormatContext *avctx, AVStream *st, AVIOContext *pb
     write_tiff_long(pb, DNG_WHITE_LEVEL, mlv->white_level);
 
     bytestream2_put_le16(pb, DNG_COLOR_MATRIX1);
-    bytestream2_put_le16(pb, TIFF_SRATIONAL);
+    bytestream2_put_le16(pb, AV_TIFF_SRATIONAL);
     bytestream2_put_le32(pb, 9);
     bytestream2_put_le32(pb, 0); /* matrixofs */
     matrixofs = pb->buffer - 4;
@@ -552,7 +548,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     index = av_index_search_timestamp(st, mlv->pts, AVSEEK_FLAG_ANY);
     if (index < 0) {
         av_log(avctx, AV_LOG_ERROR, "could not find index entry for frame %"PRId64"\n", mlv->pts);
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     pb = mlv->pb[sti->index_entries[index].size];
@@ -615,7 +611,7 @@ static int read_seek(AVFormatContext *avctx, int stream_index, int64_t timestamp
         return AVERROR(ENOSYS);
 
     if (!(avctx->pb->seekable & AVIO_SEEKABLE_NORMAL))
-        return AVERROR(EIO);
+        return AVERROR(ENOSYS);
 
     mlv->pts = timestamp;
     return 0;

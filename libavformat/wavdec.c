@@ -694,8 +694,7 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
     int64_t size;
 
     while (!avio_feof(pb)) {
-        if (avio_read(pb, guid, 16) != 16)
-            break;
+        avio_read(pb, guid, 16);
         size = avio_rl64(pb);
         if (size <= 24 || size > INT64_MAX - 8)
             return AVERROR_INVALIDDATA;
@@ -1016,6 +1015,7 @@ const FFInputFormat ff_w64_demuxer = {
     .p.codec_tag    = ff_wav_codec_tags_list,
     .p.priv_class   = &w64_demuxer_class,
     .priv_data_size = sizeof(WAVDemuxContext),
+    .flags_internal = FF_INFMT_FLAG_ID3V2_AUTO,
     .read_probe     = w64_probe,
     .read_header    = w64_read_header,
     .read_packet    = wav_read_packet,

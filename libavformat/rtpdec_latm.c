@@ -73,15 +73,11 @@ static int latm_parse_packet(AVFormatContext *ctx, PayloadContext *data,
     cur_len = 0;
     while (data->pos < data->len) {
         uint8_t val = data->buf[data->pos++];
-        if (val > data->len - cur_len) {
-            av_log(ctx, AV_LOG_ERROR, "Malformed LATM packet\n");
-            return AVERROR_INVALIDDATA;
-        }
         cur_len += val;
         if (val != 0xff)
             break;
     }
-    if (cur_len > data->len - data->pos) {
+    if (data->pos + cur_len > data->len) {
         av_log(ctx, AV_LOG_ERROR, "Malformed LATM packet\n");
         return AVERROR(EIO);
     }
