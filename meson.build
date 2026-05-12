@@ -1042,8 +1042,9 @@ check_pkg_config = [
   ['rkmpp', ['rockchip/rk_mpi.h', 'rockchip/mpp_buffer.h'], ['mpp_create', 'mpp_buffer_sync_begin_f'], {'pkg': 'rockchip_mpp', 'version': '>= 1.3.8'}],
   ['sndio', ['sndio.h'], ['sio_open'], {'pkg': 'sndio'}],
   ['vulkan', ['vulkan/vulkan.h'], ['vkCreateInstance'], {'pkg': 'vulkan', 'version': '>= 1.3.277'}],
+  ['vulkan_1_4', ['vulkan/vulkan.h'], ['vkCreateInstance'], {'pkg': 'vulkan', 'version': '>= 1.4.317'}],
   ['vulkan_static', ['vulkan/vulkan.h'], ['vkGetInstanceProcAddr'], {'pkg': 'vulkan', 'version': '>= 1.3.277'}],
-  ['whisper', ['whisper.h'], ['whisper_init_from_file_with_params'], {'pkg': 'vulkan', 'version': '>= 1.7.5'}],
+  ['whisper', ['whisper.h'], ['whisper_init_from_file_with_params'], {'pkg': 'whisper', 'version': '>= 1.7.5'}],
   ['zlib', ['zlib.h'], ['zlibVersion'], {'pkg': 'zlib'}],
 ]
 
@@ -2659,12 +2660,14 @@ endif
 # Manual check for vulkan_1_4
 glslcflags = []
 if conf.get('vulkan') == 1
-  if cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined VK_VERSION_1_4'), dependencies: extra_deps, name: 'Has Vulkan 1.4 define')
-    conf.set10('vulkan_1_4', true)
-  elif cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)'), dependencies: extra_deps, name: 'Supports Vulkan 1.4.317 or higher')
-    conf.set10('vulkan_1_4', true)
-  else
-    conf.set10('vulkan_1_4', false)
+  if conf.get('vulkan_1_4') == 1
+    if cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined VK_VERSION_1_4'), dependencies: vulkan_1_4_extra_deps, name: 'Has Vulkan 1.4 define')
+      conf.set10('vulkan_1_4', true)
+    elif cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)'), dependencies: vulkan_1_4_extra_deps, name: 'Supports Vulkan 1.4.317 or higher')
+      conf.set10('vulkan_1_4', true)
+    else
+      conf.set10('vulkan_1_4', false)
+    endif
   endif
 
   programs = ['glslc', 'glslang', 'glslangValidator']
