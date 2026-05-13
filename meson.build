@@ -2650,7 +2650,8 @@ if conf.get('schannel') == 1
     cc.find_library('ncrypt', required: false),
     cc.find_library('crypt32', required: false),
   ]
-  if cc.links(cpp_cond.format('winerror.h', 'defined(SEC_I_CONTEXT_EXPIRED)'), dependencies: secur32_dep, name: 'schannel dependency works')
+  schannel_cond = cc.links(cpp_cond.format('winerror.h', 'defined(SEC_I_CONTEXT_EXPIRED)'), dependencies: secur32_dep, name: 'schannel dependency works')
+  if schannel_cond and conf.get('initializesecuritycontext', 0) == 1 and conf.get('ncryptopenstorageprovider', 0) == 1 and conf.get('certcreateselfsigncertificate', 0) == 1
     schannel_extra_deps += [secur32_dep]
   else
     conf.set('schannel', 0)
