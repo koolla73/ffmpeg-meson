@@ -2661,12 +2661,21 @@ endif
 glslcflags = []
 if conf.get('vulkan') == 1
   if conf.get('vulkan_1_4') == 1
-    if cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined VK_VERSION_1_4'), dependencies: vulkan_1_4_extra_deps, name: 'Has Vulkan 1.4 define')
-      conf.set10('vulkan_1_4', true)
-    elif cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)'), dependencies: vulkan_1_4_extra_deps, name: 'Supports Vulkan 1.4.317 or higher')
-      conf.set10('vulkan_1_4', true)
-    else
-      conf.set10('vulkan_1_4', false)
+    internal_dep = false
+    foreach dep : vulkan_1_4_extra_deps
+      if dep.type_name() == 'internal'
+        internal_dep = true
+        break
+      endif
+    endforeach
+    if not internal_dep
+      if cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined VK_VERSION_1_4'), dependencies: vulkan_1_4_extra_deps, name: 'Has Vulkan 1.4 define')
+        conf.set10('vulkan_1_4', true)
+      elif cc.links(cpp_cond.format('vulkan/vulkan.h', 'defined(VK_VERSION_1_5) || (defined(VK_VERSION_1_4) && VK_HEADER_VERSION >= 317)'), dependencies: vulkan_1_4_extra_deps, name: 'Supports Vulkan 1.4.317 or higher')
+        conf.set10('vulkan_1_4', true)
+      else
+        conf.set10('vulkan_1_4', false)
+      endif
     endif
   endif
 
