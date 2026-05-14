@@ -2660,6 +2660,7 @@ endif
 
 # Manual check for vulkan_1_4
 glslcflags = []
+glslc_depflags = []
 if conf.get('vulkan') == 1
   if conf.get('vulkan_1_4') == 1
     internal_dep = false
@@ -2691,15 +2692,17 @@ if conf.get('vulkan') == 1
         'spirv1.6',
         '--glsl-version',
         '460',
+      ]
+      glslc_depflags = [
         '--depfile',
         '@DEPFILE@'
       ]
       if conf.get('small', 0) == 1
-        glslcflags = ['-Os']
+        glslcflags += ['-Os']
       elif conf.get('optimizations', 0) == 1
-        glslcflags = []
+        glslcflags += []
       else
-        glslcflags = ['-Od']
+        glslcflags += ['-Od']
       endif
       if get_option('optimization') == '0'
         glslcflags += ['-gVS']
@@ -2710,10 +2713,13 @@ if conf.get('vulkan') == 1
         '--target-env=vulkan1.4',
         '--target-spv=spv1.6',
         '-std=460',
+      ]
+      glslc_depflags = [
         '-MD',
         '-MF',
         '@DEPFILE@',
-        '-MT'
+        '-MT',
+        '@OUTPUT@'
       ]
       if conf.get('small', 0) == 1
         glslcflags += ['-Os']
@@ -2730,6 +2736,22 @@ if conf.get('vulkan') == 1
       conf.set10('spirv_compiler', false)
     endif
   endforeach
+
+  # This will be unset if glslc was found
+  if conf.get('spirv_compiler', 1) == 1
+    check = '''#version 460
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive : require
+void main(void) {}
+'''
+    f = configure_file(
+      command: [python3, '-c', 'import sys; print(sys.argv[1])', '@0@'.format(check)],
+      output: 'test_glslc.comp.glsl',
+      capture: true,
+    )
+    test_glslc = run_command(glslc_exe, glslcflags, f, check: false)
+    conf.set10('spirv_compiler', test_glslc.returncode() == 0)
+  endif
 else
   conf.set10('libglslang', false)
   conf.set10('libshaderc', false)
@@ -3834,7 +3856,6 @@ fs = import('fs')
 foreach built_lib : built_libs
   sources = get_variable('lib@0@_sources'.format(built_lib[0])) + [ffversion_h]
   x86asm_sources = []
-  shader_sources = []
   tests = get_variable('lib@0@_tests'.format(built_lib[0]), [])
   gen_objects = []
   optional_deps = get_variable('lib@0@_optional_deps'.format(built_lib[0]), [])
@@ -3945,22 +3966,6 @@ foreach built_lib : built_libs
     endif
   endforeach
 
-  if conf.get('cuda_nvcc', 0) == 1 or conf.get('cuda_llvm') == 1
-    optional_sources = get_variable('lib@0@_cuda_optional_sources'.format(built_lib[0]), {})
-    foreach comp_name, comp_sources : optional_sources
-      if conf.get(comp_name, 0) == 1
-        shader_sources += comp_sources
-      endif
-    endforeach
-  elif conf.get('spirv_compiler', 0) == 1
-    optional_sources = get_variable('lib@0@_vulkan_optional_sources'.format(built_lib[0]), {})
-    foreach comp_name, comp_sources : optional_sources
-      if conf.get(comp_name, 0) == 1
-        shader_sources += comp_sources
-      endif
-    endforeach
-  endif
-
   foreach comp_name, comp_tests : optional_tests
     if conf.get(comp_name, 0) == 1
       tests += comp_tests
@@ -3983,8 +3988,15 @@ foreach built_lib : built_libs
 
   version = get_variable('lib@0@_majorver'.format(built_lib[0]))
 
-  if shader_sources.length() > 0
-    if conf.get('cuda_nvcc', 0) == 1 or conf.get('cuda_llvm') == 1
+  if conf.get('cuda_nvcc', 0) == 1 or conf.get('cuda_llvm') == 1
+    optional_sources = get_variable('lib@0@_cuda_optional_sources'.format(built_lib[0]), {})
+    shader_sources = []
+    foreach comp_name, comp_sources : optional_sources
+      if conf.get(comp_name, 0) == 1
+        shader_sources += comp_sources
+      endif
+    endforeach
+    if shader_sources.length() > 0
       asm_gen = generator(nvcc_default,
         output : '@BASENAME@.ptx',
         arguments : [
@@ -3993,23 +4005,42 @@ foreach built_lib : built_libs
           '@INPUT@',
         ]
       )
-    elif conf.get('spirv_compiler', 0) == 1
+      cuda_objects = asm_gen.process(shader_sources)
+      if conf.get('shader_compression') == 1
+        gz_objs = gzip_gen.process(cuda_objects)
+        gen_objects += bin2c.process(gz_objs)
+      else
+        gen_objects += bin2c_with_extension.process(cuda_objects)
+      endif
+    endif
+  endif
+
+  if conf.get('spirv_compiler', 0) == 1
+    optional_sources = get_variable('lib@0@_vulkan_optional_sources'.format(built_lib[0]), {})
+    shader_sources = []
+    foreach comp_name, comp_sources : optional_sources
+      if conf.get(comp_name, 0) == 1
+        shader_sources += comp_sources
+      endif
+    endforeach
+    if shader_sources.length() > 0
       asm_gen = generator(glslc_exe,
         output: '@BASENAME@.spv',
         arguments: [
           glslcflags,
+          glslc_depflags,
           '-o', '@OUTPUT@',
           '@INPUT@',
         ],
         depfile: '@BASENAME@.d'
       )
-    endif
-    cuda_objects = asm_gen.process(shader_sources)
-    if conf.get('shader_compression') == 1
-      gz_objs = gzip_gen.process(cuda_objects)
-      gen_objects = bin2c.process(gz_objs)
-    else
-      gen_objects = bin2c_with_extension.process(cuda_objects)
+      cuda_objects = asm_gen.process(shader_sources)
+      if conf.get('shader_compression') == 1
+        gz_objs = gzip_gen.process(cuda_objects)
+        gen_objects += bin2c.process(gz_objs)
+      else
+        gen_objects += bin2c_with_extension.process(cuda_objects)
+      endif
     endif
   endif
 
