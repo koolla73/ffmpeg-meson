@@ -3836,13 +3836,23 @@ foreach built_lib : built_libs
 
   c_args = ['-DHAVE_AV_CONFIG_H', '-DBUILDING_@0@'.format(built_lib[0])]
 
-  link_args = cc.get_supported_link_arguments([
-    # Fixes warnings about PIC relocation.
+  bsymbolic = cc.get_supported_link_arguments([
+    # Fixes warnings about PIC relocation. Must be forwarded to downstream
+    # consumers when building as a subproject and statically.
     # See:
     # https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/3348#note_2308136
     # https://github.com/google/ExoPlayer/issues/9933#issuecomment-1029775358
+    # https://trac.ffmpeg.org/ticket/1713#comment:6
+    # https://ffmpeg.org/platform.html#Advanced-linking-configuration
     '-Wl,-Bsymbolic'
-  ]) + vflag
+  ])
+  link_args = bsymbolic + vflag
+
+  if conf.get('static') == 1
+    static_link_args = bsymbolic
+  else
+    static_link_args = []
+  endif
 
   special_files = []
   special_includes = []
@@ -3927,7 +3937,8 @@ foreach built_lib : built_libs
   declared_dep = declare_dependency(link_with: lib,
     include_directories: include_directories('.'),
     dependencies: deps,
-    version: get_variable('lib@0@_version'.format(built_lib[0]))
+    version: get_variable('lib@0@_version'.format(built_lib[0])),
+    link_args: static_link_args,
   )
 
   set_variable('lib@0@_dep'.format(built_lib[0]), declared_dep)
@@ -4044,6 +4055,8 @@ foreach pkg_info : pkg_infos
       # See:
       # https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/3348#note_2308136
       # https://github.com/google/ExoPlayer/issues/9933#issuecomment-1029775358
+      # https://trac.ffmpeg.org/ticket/1713#comment:6
+      # https://ffmpeg.org/platform.html#Advanced-linking-configuration
       '-Wl,-Bsymbolic'
     ])
   )
