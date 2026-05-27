@@ -1296,7 +1296,7 @@ check_header_funcs = [
   ['CreateDIBSection', ['windows.h'], {'link_with': ['gdi32']}],
   ['InitializeSecurityContext', ['windows.h', 'security.h'], {'link_with': ['secur32'], 'c_args': ['-DSECURITY_WIN32']}],
   ['NCryptOpenStorageProvider', ['windows.h', 'ncrypt.h'], {'link_with': ['ncrypt'], 'c_args': ['-DSECURITY_WIN32']}],
-  ['CertCreateSelfSignCertificate', ['windows.h', 'ncrypt.h'], {'link_with': ['crypt32'], 'c_args': ['-DSECURITY_WIN32']}],
+  ['CertCreateSelfSignCertificate', ['windows.h', 'wincrypt.h'], {'link_with': ['crypt32'], 'c_args': ['-DSECURITY_WIN32']}],
   ['MemoryBarrier', ['windows.h']],
   ['posix_memalign', ['stdlib.h']],
   ['sem_timedwait', ['semaphore.h'], {'preconditions': ['pthreads'], 'extra_deps': ['thread_dep']}],
