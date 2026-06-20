@@ -21,7 +21,7 @@ project('FFmpeg', 'c', 'cpp',
   license: 'LGPL2.1+',
   # Static libraries by default following upstream
   default_options: [ 'buildtype=debugoptimized', 'c_std=c17', 'cpp_std=c++11', 'default_library=static', 'b_staticpic=true'],
-  version: '8.0.2',
+  version: '8.0.3',
 )
 
 # HOWTO:
@@ -3548,7 +3548,7 @@ final_conf = configuration_data()
 
 ffmpeg_configuration = meson.build_options().strip()
 final_conf.set_quoted('FFMPEG_CONFIGURATION', ffmpeg_configuration.replace('\\', '\\\\'))
-final_conf.set('CONFIG_THIS_YEAR', 2022)
+final_conf.set('CONFIG_THIS_YEAR', 2026)
 final_conf.set_quoted('FFMPEG_DATADIR', join_paths(get_option('prefix'), get_option('datadir')))
 final_conf.set_quoted('AVCONV_DATADIR', join_paths(get_option('prefix'), get_option('datadir')))
 final_conf.set_quoted('CC_IDENT', '@0@ @1@'.format(cc.get_id(), cc.version()))
