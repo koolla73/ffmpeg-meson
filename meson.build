@@ -22,7 +22,7 @@ project('FFmpeg', 'c', 'cpp',
   # Static libraries by default following upstream
   # C++17 since 8.1
   default_options: [ 'buildtype=debugoptimized', 'c_std=c17', 'cpp_std=c++17', 'default_library=static', 'b_staticpic=true'],
-  version: '8.1',
+  version: '8.1.2',
 )
 
 # HOWTO:

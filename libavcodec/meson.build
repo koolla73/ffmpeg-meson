@@ -563,7 +563,7 @@ libavcodec_optional_sources = {
   'kgv1_decoder' : files('kgv1dec.c'),
   'kmvc_decoder' : files('kmvc.c'),
   'lagarith_decoder' : files('lagarith.c','lagarithrac.c'),
-  'lcevc_parser' : files('lcevc_parser.c'),
+  'lcevc_parser' : files('lcevc_parser.c', 'lcevctab.c'),
   'lcms2' : files('fflcms2.c'),
   'lead_decoder' : files('leaddec.c','jpegquanttables.c'),
   'libaom_av1_decoder' : files('libaomdec.c','libaom.c'),
