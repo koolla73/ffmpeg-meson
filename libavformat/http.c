@@ -163,7 +163,7 @@ typedef struct HTTPContext {
 #define OFFSET(x) offsetof(HTTPContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
-#define DEFAULT_USER_AGENT "Lavf/" AV_STRINGIFY(LIBAVFORMAT_VERSION)
+#define DEFAULT_USER_AGENT ""
 
 static const AVOption options[] = {
     { "seekable", "control seekability of connection", OFFSET(seekable), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, D },
@@ -180,7 +180,7 @@ static const AVOption options[] = {
     { "mime_type", "export the MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { "http_version", "export the http response version", OFFSET(http_version), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { "cookies", "set cookies to be sent in applicable future requests, use newline delimited Set-Cookie HTTP field value syntax", OFFSET(cookies), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
-    { "icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D },
+    { "icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D },
     { "icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT },
     { "icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT },
     { "metadata", "metadata read from the bitstream", OFFSET(metadata), AV_OPT_TYPE_DICT, {0}, 0, 0, AV_OPT_FLAG_EXPORT },
@@ -1590,29 +1590,8 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     }
     if (!has_header(s->headers, "\r\nAccept: "))
         av_bprintf(&request, "Accept: */*\r\n");
-    // Note: we send the Range header on purpose, even when we're probing,
-    // since it allows us to detect more reliably if a (non-conforming)
-    // server supports seeking by analysing the reply headers.
-    if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable != 0)) {
-        av_bprintf(&request, "Range: bytes=%"PRIu64"-", s->off);
-        if ((s->initial_requests || s->request_size) && s->seekable != 0) {
-            uint64_t req_size = s->initial_requests ? s->initial_request_size : s->request_size;
-            uint64_t target_off = s->off + req_size;
-            if (target_off < s->off) /* overflow */
-                target_off = UINT64_MAX;
-            if (s->end_off)
-                target_off = FFMIN(target_off, s->end_off);
-            if (target_off != UINT64_MAX)
-                av_bprintf(&request, "%"PRId64, target_off - 1);
-        } else if (s->end_off)
-            av_bprintf(&request, "%"PRId64, s->end_off - 1);
-        av_bprintf(&request, "\r\n");
-    }
     if (send_expect_100 && !has_header(s->headers, "\r\nExpect: "))
         av_bprintf(&request, "Expect: 100-continue\r\n");
-
-    if (!has_header(s->headers, "\r\nConnection: "))
-        av_bprintf(&request, "Connection: %s\r\n", s->multiple_requests ? "keep-alive" : "close");
 
     if (!has_header(s->headers, "\r\nHost: "))
         av_bprintf(&request, "Host: %s\r\n", hoststr);
