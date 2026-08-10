@@ -1591,6 +1591,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (send_expect_100 && !has_header(s->headers, "\r\nExpect: "))
         av_bprintf(&request, "Expect: 100-continue\r\n");
 
+    if (!has_header(s->headers, "\r\nHost: "))
+        av_bprintf(&request, "Host: %s\r\n", hoststr);
+
     if (!has_header(s->headers, "\r\nContent-Length: ") && s->post_data)
         av_bprintf(&request, "Content-Length: %d\r\n", s->post_datalen);
 
