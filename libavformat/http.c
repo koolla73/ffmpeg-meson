@@ -1588,13 +1588,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
         if (!has_header(s->headers, "\r\nReferer: "))
             av_bprintf(&request, "Referer: %s\r\n", s->referer);
     }
-    if (!has_header(s->headers, "\r\nAccept: "))
-        av_bprintf(&request, "Accept: */*\r\n");
     if (send_expect_100 && !has_header(s->headers, "\r\nExpect: "))
         av_bprintf(&request, "Expect: 100-continue\r\n");
 
-    if (!has_header(s->headers, "\r\nHost: "))
-        av_bprintf(&request, "Host: %s\r\n", hoststr);
     if (!has_header(s->headers, "\r\nContent-Length: ") && s->post_data)
         av_bprintf(&request, "Content-Length: %d\r\n", s->post_datalen);
 
@@ -1607,8 +1603,6 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
             av_free(cookies);
         }
     }
-    if (!has_header(s->headers, "\r\nIcy-MetaData: ") && s->icy)
-        av_bprintf(&request, "Icy-MetaData: 1\r\n");
 
     /* now add in custom headers */
     if (s->headers)
